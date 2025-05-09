@@ -22,7 +22,7 @@ const loginSessionSchema = new mongoose.Schema({
     default: Date.now
   },
   logout_time: Date
-});
+},{ collection: 'login_collection' })
 
-const LoginSession = mongoose.model('LoginSession', loginSessionSchema);
-module.exports = LoginSession;
+const LoggingSession = mongoose.model('LoggingSession', loginSessionSchema);
+module.exports = LoggingSession;

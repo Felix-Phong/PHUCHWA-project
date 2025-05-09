@@ -1,5 +1,5 @@
 const {getAllUsersService,createUserService,loginService,deleteUserService,updateUserService} = require('../services/userService')
-
+const {createLoggingSession,updateLogoutTime} = require('../services/logginSessionService')
 const createUser = async (req, res, next) => {
   try {
  
@@ -26,11 +26,29 @@ const handleLogin = async (req, res, next) => {
     // Gọi service để xử lý đăng nhập
     const data = await loginService(email, password);
 
+     // Lưu phiên đăng nhập
+     await createLoggingSession({
+      user_id: data.user.id,
+      role: data.user.role,
+      token: data.access_token,
+      card_id: req.body.card_id || null // Nếu có card_id
+    });
+
     return res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
 };
+
+const updateLogout = async (req, res, next) => {
+ try {
+  const token = req.headers.authorization.split(' ')[1]; // Lấy token từ header
+  await updateLogoutTime(token); // Cập nhật thời gian đăng xuất
+  return res.status(200).json({ success: true, message: 'Logout time updated successfully' });
+ } catch (error) {
+   next(error);
+ }
+}
 
 const getAccount = async (req, res,next) => {
 return res.status(200).json(req.user);
@@ -67,6 +85,7 @@ module.exports = {
   getAllUsers,
   createUser,
   handleLogin,
+  updateLogout,
   getAccount,
   updateUser,
   deleteUser

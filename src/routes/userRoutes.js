@@ -4,9 +4,11 @@ const {
   getAllUsers,
   handleLogin,
   createUser,
+  updateLogout,
   getAccount,
   updateUser,
   deleteUser
+  
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -141,6 +143,33 @@ router.post('/register', createUser);
  *         description: Email hoặc mật khẩu không chính xác
  */
 router.post('/login', handleLogin);
+
+/**
+ * @swagger
+ * /users/logout:
+ *   post:
+ *     summary: Đăng xuất người dùng
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Đăng xuất thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       401:
+ *         description: Không có quyền truy cập (Unauthorized)
+ */
+router.post('/logout', auth, updateLogout);
 
 router.get('/account',auth,getAccount);
 
