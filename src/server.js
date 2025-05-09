@@ -28,6 +28,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+
 // Routes chính
 app.use('/api', routes);
 
@@ -36,6 +37,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Xử lý lỗi tập trung
 app.use(errorHandler);
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

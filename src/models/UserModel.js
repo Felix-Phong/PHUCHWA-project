@@ -11,12 +11,12 @@ const userSchema = new mongoose.Schema({
   card_id: {
     type: String,
     unique: true,
-    sparse: true 
+    sparse: true
   },
   role: {
     type: String,
     required: true,
-    enum: ['nurse', 'elderly']
+    enum: ['nurse', 'elderly'] // Giá trị hợp lệ cho role
   },
   email: {
     type: String,
@@ -30,21 +30,21 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() {
+    required: function () {
       return this.role === 'elderly';
     }
   },
   student_id: {
     type: String,
-    required: function() {
+    required: function () {
       return this.role === 'nurse';
     },
     unique: true
   }
-}, { discriminatorKey: 'role' });
+}, { discriminatorKey: 'role' }); // Định nghĩa discriminatorKey
 
 // Hash password trước khi lưu
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (this.role === 'elderly' && this.isModified('password')) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -55,11 +55,11 @@ userSchema.pre('save', async function(next) {
 const User = mongoose.model('User', userSchema);
 
 // Discriminators cho từng role
-const Nurse = User.discriminator('Nurse', new mongoose.Schema({
+const Nurse = User.discriminator('nurse', new mongoose.Schema({
   student_id: { type: String, required: true }
 }));
 
-const Elderly = User.discriminator('Elderly', new mongoose.Schema({
+const Elderly = User.discriminator('elderly', new mongoose.Schema({
   password: { type: String, required: true }
 }));
 

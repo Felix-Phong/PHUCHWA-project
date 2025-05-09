@@ -1,6 +1,7 @@
 const express = require('express');
 const userRoutes = require('./userRoutes');
 const delay = require('../middleware/delay');
+const auth = require('../middleware/auth'); // Import middleware auth nếu cần
 // Nếu có thêm routes khác, import ở đây
 // const productRoutes = require('./productRoutes');
 
