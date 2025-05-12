@@ -28,7 +28,7 @@ const handleLogin = async (req, res, next) => {
 
      // Lưu phiên đăng nhập
      await createLoggingSession({
-      user_id: data.user.id,
+      user_id: data.user.user_id,
       role: data.user.role,
       token: data.access_token,
       card_id: req.body.card_id || null // Nếu có card_id

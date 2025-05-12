@@ -23,7 +23,8 @@
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
       email: decoded.email,
-      id: decoded.id
+      user_id: decoded.user_id,
+      role: decoded.role,
     };
     next();
   } catch (err) {

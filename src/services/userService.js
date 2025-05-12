@@ -104,7 +104,7 @@ const loginService = async (email, password) => {
 
     // 3. Tạo payload cho JWT
     const payload = {
-      id: user._id,
+      user_id: user.user_id,
       email: user.email,
       role: user.role, // Thêm role nếu cần
     };
@@ -120,7 +120,7 @@ const loginService = async (email, password) => {
     return {
       access_token,
       user: {
-        id: user._id,
+        user_id: user.user_id,
         email: user.email,
         role: user.role, // Thêm role nếu cần
       },
