@@ -7,8 +7,9 @@ const {
   updateLogout,
   getAccount,
   updateUser,
-  deleteUser
-  
+  deleteUser,
+  sendVerifyEmail,
+  verifyAccount
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -170,6 +171,93 @@ router.post('/login', handleLogin);
  *         description: Không có quyền truy cập (Unauthorized)
  */
 router.post('/logout', auth, updateLogout);
+
+/**
+ * @swagger
+ * /users/send-verify-email:
+ *   post:
+ *     summary: Gửi mã OTP xác thực email cho người dùng
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Email của người dùng
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Gửi OTP thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: OTP sent to email
+ *       400:
+ *         description: Thiếu email hoặc dữ liệu không hợp lệ
+ */
+router.post('/send-verify-email', sendVerifyEmail);
+
+/**
+ * @swagger
+ * /users/verify-account:
+ *   post:
+ *     summary: Xác thực tài khoản người dùng bằng mã OTP
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Email của người dùng
+ *                 example: user@example.com
+ *               otp:
+ *                 type: string
+ *                 description: Mã OTP đã gửi về email
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Xác thực thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Email verified successfully
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *                     email_verified:
+ *                       type: boolean
+ *                       example: true
+ *       400:
+ *         description: OTP không hợp lệ hoặc đã hết hạn
+ *       404:
+ *         description: Không tìm thấy người dùng
+ */
+router.post('/verify-account', verifyAccount);
 
 router.get('/account',auth,getAccount);
 

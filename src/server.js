@@ -7,14 +7,24 @@ const connectDB  = require('../config/db');
 const swaggerUi = require('swagger-ui-express');
 const errorHandler = require('./middleware/errorHandler');
 const routes = require('./routes');
+const redisClient = require('../config/redisClient');
 
 // Import đúng spec từ file swagger.js
-const swaggerSpecs = require('../swagger.js');
+const swaggerSpecs = require('../config/swagger');
 
 const app = express();
 
 // Kết nối MongoDB
 connectDB();
+
+// Kết nối Redis
+redisClient.on('connect', () => {
+  console.log('Connected to Redis Cloud');
+});
+
+redisClient.on('error', (err) => {
+  console.error('Redis connection error:', err);
+});
 
 // Middleware cơ bản
 app.use(helmet());

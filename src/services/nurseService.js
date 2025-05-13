@@ -42,6 +42,15 @@ const createNurseProfileService = async (req) => {
     throw new ApiError(403, 'Only nurses can create profiles');
   }
 
+    // Lấy user từ DB để kiểm tra email_verified
+  const user = await User.findOne({ user_id: req.user.user_id });
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  if (!user.email_verified) {
+    throw new ApiError(403, 'Email must be verified before creating profile');
+  }
+
   
   // Kiểm tra xem hồ sơ đã tồn tại chưa
   const existingProfile = await Nurse.findOne({ user_id: req.user.user_id });

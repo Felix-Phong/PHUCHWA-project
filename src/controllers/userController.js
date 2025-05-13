@@ -1,4 +1,11 @@
-const {getAllUsersService,createUserService,loginService,deleteUserService,updateUserService} = require('../services/userService')
+const {
+  getAllUsersService,
+  createUserService,
+  loginService,
+  deleteUserService,
+  updateUserService,
+  sendVerifyEmailService,
+  verifyAccountService} = require('../services/userService')
 const {createLoggingSession,updateLogoutTime} = require('../services/logginSessionService')
 const createUser = async (req, res, next) => {
   try {
@@ -35,6 +42,28 @@ const handleLogin = async (req, res, next) => {
     });
 
     return res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Gửi OTP xác thực email
+const sendVerifyEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    await sendVerifyEmailService(email);
+    res.status(200).json({ success: true, message: 'OTP sent to email' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Xác thực OTP
+const verifyAccount = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    const result = await verifyAccountService(email, otp);
+    res.status(200).json({ success: true, ...result });
   } catch (error) {
     next(error);
   }
@@ -86,6 +115,8 @@ module.exports = {
   createUser,
   handleLogin,
   updateLogout,
+  sendVerifyEmail,
+  verifyAccount,
   getAccount,
   updateUser,
   deleteUser

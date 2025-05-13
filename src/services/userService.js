@@ -3,7 +3,10 @@ const {User, Nurse, Elderly} = require('../models/UserModel')
 const ApiError = require('../utils/apiError')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const saltRounds = 10;
+const {sendVerificationEmail} = require('./helperService')
+const redis = require('../../config/redisClient') 
 
 const getAllUsersService = async () => {
   return await User.find()
@@ -132,6 +135,53 @@ const loginService = async (email, password) => {
   }
 };
 
+const sendVerifyEmailService = async (email) => {
+  if (!email) {
+    throw new ApiError(400, 'Email is required');
+  }
+
+ 
+  const otp = crypto.randomInt(100000, 999999).toString();
+
+
+  const otpKey = `otp:${email}`;
+  await redis.set(otpKey, otp, 'EX', 300); // EX: thời gian hết hạn là 300 giây (5 phút)
+
+  await sendVerificationEmail(email,otp);
+}
+
+const verifyAccountService = async (email, otp) => {
+
+  if (!email || !otp) {
+    throw new ApiError(400, 'Email and OTP are required');
+  }
+
+  const otpKey = `otp:${email}`;
+  const storedOtp = await redis.get(otpKey);
+
+  if (!storedOtp) {
+    throw new ApiError(400, 'OTP has expired or is invalid');
+  }
+
+  if (storedOtp !== otp) {
+    throw new ApiError(400, 'Invalid OTP');
+  }
+
+  // Xóa OTP sau khi xác thực thành công
+  await redis.del(otpKey);
+  
+  const user = await User.findOneAndUpdate(
+    { email },
+    { email_verified: true },
+    { new: true }
+  );
+
+   if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  return { message: 'Email verified successfully', user };
+}
 
 const updateUserService = async (userId, updateData) => {
   const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
@@ -154,6 +204,8 @@ module.exports = {
   getUserByIdService,
   createUserService,
   loginService,
+  verifyAccountService,
+  sendVerifyEmailService,
   updateUserService,
   deleteUserService
 }
