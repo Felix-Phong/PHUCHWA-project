@@ -1,67 +1,67 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid'); 
+const { v4: uuidv4 } = require('uuid');
 
+// Định nghĩa schema cơ bản cho người dùng
 const userSchema = new mongoose.Schema({
   user_id: {
     type: String,
     required: true,
     unique: true,
-   default: uuidv4
-  },
-  card_id: {
-    type: String,
-    unique: true,
-    sparse: true
-  },
-  role: {
-    type: String,
-    required: true,
-    enum: ['nurse', 'elderly'] // Giá trị hợp lệ cho role
+    default: uuidv4
   },
   email: {
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
+    trim: true,
     match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  },
+  role: {
+    type: String,
+    required: true,
+    enum: ['nurse', 'elderly']
+  },
+  // Chỉ lưu password khi role = elderly
+  password: {
+    type: String,
+    minlength: 8,
+    required: function() { return this.role === 'elderly'; }
+  },
+  // Chỉ lưu student_id khi role = nurse
+  student_id: {
+    type: String,
+    required: function() { return this.role === 'nurse'; },
+    unique: true,
+    trim: true
   },
   email_verified: {
     type: Boolean,
     default: false
-  },
-  password: {
-    type: String,
-    required: function () {
-      return this.role === 'elderly';
-    }
-  },
-  student_id: {
-    type: String,
-    required: function () {
-      return this.role === 'nurse';
-    },
-    unique: true
   }
-}, { discriminatorKey: 'role' }); // Định nghĩa discriminatorKey
+}, {
+  discriminatorKey: 'role',
+  timestamps: true
+});
 
-// Hash password trước khi lưu
-userSchema.pre('save', async function (next) {
+// Hash password trước khi lưu nếu role = elderly
+userSchema.pre('save', async function(next) {
   if (this.role === 'elderly' && this.isModified('password')) {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    try {
+      const salt = await bcrypt.genSalt(12);
+      this.password = await bcrypt.hash(this.password, salt);
+    } catch (err) {
+      return next(err);
+    }
   }
   next();
 });
 
 const User = mongoose.model('User', userSchema);
 
-// Discriminators cho từng role
-const Nurse = User.discriminator('nurse', new mongoose.Schema({
-  student_id: { type: String, required: true }
-}));
-
-const Elderly = User.discriminator('elderly', new mongoose.Schema({
-  password: { type: String, required: true }
-}));
+// Chỉ định các field bổ sung cho từng role (nếu cần mở rộng)
+const Nurse = User.discriminator('nurse', new mongoose.Schema({}, { _id: false }));
+const Elderly = User.discriminator('elderly', new mongoose.Schema({}, { _id: false }));
 
 module.exports = { User, Nurse, Elderly };

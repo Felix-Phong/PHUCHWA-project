@@ -1,6 +1,6 @@
 const express = require('express');
 const { getNurseById, createNurseProfile} = require('../controllers/nurseController');
-const auth = require('../middleware/auth');
+const {auth} = require('../middleware/auth');
 const router = express.Router();
 
 /**
@@ -58,29 +58,34 @@ router.get('/:id', auth, getNurseById);
  * @swagger
  * /nurses/profile:
  *   post:
- *     summary: Tạo hồ sơ y tá
+ *     summary: Tạo hồ sơ y tá (card sẽ tự động sinh sau khi tạo hồ sơ)
  *     tags: [Nurses]
  *     security:
- *       - bearerAuth: [] # Yêu cầu xác thực bằng Bearer Token
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - level
+ *               - experience_years
+ *               - specializations
+ *               - certifications
+ *               - location
+ *               - school
+ *               - year_of_study
+ *               - poseidonHash
+ *               - test_score
+ *               - class
+ *               - course
+ *               - major
  *             properties:
- *               card_id:
- *                 type: string
- *                 description: ID thẻ QR của y tá (phải tham chiếu đến User)
- *                 example: 64b7f3c2e4b0d6a1f8e4b0d6
- *               student_id:
- *                 type: string
- *                 description: ID sinh viên của y tá (phải tham chiếu đến User)
- *                 example: 64b7f3c2e4b0d6a1f8e4b0d6
  *               level:
  *                 type: string
- *                 description: Cấp độ của y tá
  *                 enum: [basic, standard, premium]
+ *                 description: Cấp độ của y tá
  *                 example: standard
  *               experience_years:
  *                 type: number
@@ -132,7 +137,7 @@ router.get('/:id', auth, getNurseById);
  *                 example: "Pediatrics"
  *     responses:
  *       201:
- *         description: Hồ sơ y tá được tạo thành công
+ *         description: Hồ sơ y tá được tạo thành công, card sẽ tự động sinh
  *         content:
  *           application/json:
  *             schema:
@@ -146,7 +151,7 @@ router.get('/:id', auth, getNurseById);
  *       400:
  *         description: Hồ sơ đã tồn tại hoặc dữ liệu không hợp lệ
  *       403:
- *         description: Người dùng không có quyền tạo hồ sơ
+ *         description: Người dùng không có quyền tạo hồ sơ hoặc email chưa xác thực
  *       500:
  *         description: Lỗi máy chủ
  */

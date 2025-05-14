@@ -1,6 +1,7 @@
 const Nurse = require('../models/NurseModel');
 const {User} = require('../models/UserModel');
 const ApiError = require('../utils/apiError');
+const {createCardService} = require('../services/cardService');
 
 const getNurseByIdService = async (nurseId) => {
   try {
@@ -19,8 +20,7 @@ const getNurseByIdService = async (nurseId) => {
 };
 
 const createNurseProfileService = async (req) => {
-    const {
-    card_id,
+  const {
     level,
     experience_years,
     specializations,
@@ -30,19 +30,17 @@ const createNurseProfileService = async (req) => {
     year_of_study,
     poseidonHash,
     test_score,
-    student_id,
     class: nurseClass,
     course,
     major
   } = req.body;
-
 
   // Kiểm tra role của người dùng
   if (req.user.role !== 'nurse') {
     throw new ApiError(403, 'Only nurses can create profiles');
   }
 
-    // Lấy user từ DB để kiểm tra email_verified
+  // Lấy user từ DB để kiểm tra email_verified
   const user = await User.findOne({ user_id: req.user.user_id });
   if (!user) {
     throw new ApiError(404, 'User not found');
@@ -51,39 +49,24 @@ const createNurseProfileService = async (req) => {
     throw new ApiError(403, 'Email must be verified before creating profile');
   }
 
-  
   // Kiểm tra xem hồ sơ đã tồn tại chưa
   const existingProfile = await Nurse.findOne({ user_id: req.user.user_id });
   if (existingProfile) {
     throw new ApiError(400, 'Profile already exists');
   }
 
-  // Kiểm tra xem card_id và student_id có hợp lệ không
-  const userOrProfile = await User.findOne({
-    $or: [
-      { card_id }, // Kiểm tra card_id
-      { student_id } // Kiểm tra student_id
-    ]
+   // Tạo card tự động (card_id sẽ tự sinh trong service)
+  const card = await createCardService({
+    user_id: req.user.user_id,
+    student_id: user.student_id,
+    role: req.user.role
   });
-
-  // Kiểm tra từng trường hợp
-  if (userOrProfile) {
-    if (userOrProfile.card_id !== card_id) {
-      console.log(`Invalid card_id: expected ${userOrProfile.card_id}, received ${card_id}`);
-      throw new ApiError(400, 'Invalid card_id');
-    }
-    if (userOrProfile.student_id !== student_id) {
-      console.log(`Invalid student_id: expected ${userOrProfile.student_id}, received ${student_id}`);
-      throw new ApiError(400, 'Invalid student_id');
-    }
-  }
 
   // Tạo hồ sơ mới
   const nurseProfile = new Nurse({
-     user_id: req.user.user_id, 
-    card_id: userOrProfile.card_id , 
-    student_id: userOrProfile.student_id, 
-    card_id,
+    user_id: req.user.user_id,
+    student_id: user.student_id,
+    card_id: card.card_id,
     level,
     experience_years,
     specializations,
@@ -93,7 +76,6 @@ const createNurseProfileService = async (req) => {
     year_of_study,
     poseidonHash,
     test_score,
-    student_id,
     class: nurseClass,
     course,
     major,
@@ -101,6 +83,8 @@ const createNurseProfileService = async (req) => {
   });
 
   await nurseProfile.save();
+
+ 
   return nurseProfile;
 };
 

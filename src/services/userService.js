@@ -7,21 +7,26 @@ const crypto = require('crypto');
 const saltRounds = 10;
 const {sendVerificationEmail} = require('./helperService')
 const redis = require('../../config/redisClient') 
+const {createLoggingSession} = require('./logginSessionService')
 
-const getAllUsersService = async () => {
-  return await User.find()
-}
 
-const getUserByIdService = async (userId) => {
-  const user = await User.findById(userId)
-  if (!user) {
-    throw new ApiError(404, 'User not found')
-  }
-  return user
-}
+const getAllUsersService = async ({ page = 1, limit = 20 }) => {
+  const skip = (page - 1) * limit;
+  const [users, total] = await Promise.all([
+    User.find().skip(skip).limit(limit).select('-password'),
+    User.countDocuments()
+  ]);
+  return { users, total, page, limit };
+};
 
-const createUserService = async ({ email, password, role, student_id, card_id }) => {
-  // 1. Kiểm tra dữ liệu đầu vào
+const getUserByIdService = async (user_id) => {
+  const user = await User.findOne({ user_id }).select('-password');
+  if (!user) throw new ApiError(404, 'User not found');
+  return user;
+};
+
+const createUserService = async ({ email, password, role, student_id }) => {
+  // Validate cơ bản
   if (!email || !password || !role) {
     throw new ApiError(400, 'Email, password và role đều bắt buộc');
   }
@@ -32,172 +37,96 @@ const createUserService = async ({ email, password, role, student_id, card_id })
     throw new ApiError(400, 'student_id là bắt buộc khi role = nurse');
   }
 
-  // 2. Kiểm tra email, student_id, và card_id trùng lặp
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new ApiError(409, 'Email đã tồn tại');
-  }
-  if (student_id) {
-    const existingStudent = await User.findOne({ student_id });
-    if (existingStudent) {
-      throw new ApiError(409, 'Student ID đã tồn tại');
-    }
-  }
-  if (card_id) {
-    const existingCard = await User.findOne({ card_id });
-    if (existingCard) {
-      throw new ApiError(409, 'Card ID đã tồn tại');
-    }
-  }
+  // Kiểm tra trùng lặp
+  if (await User.findOne({ email })) throw new ApiError(409, 'Email đã tồn tại');
+  if (role === 'nurse' && await User.findOne({ student_id })) throw new ApiError(409, 'Student ID đã tồn tại');
 
-  try {
-    // 3. Hash mật khẩu
-    const hashPassword = await bcrypt.hash(password, saltRounds);
-  
-    // 4. Tạo user dựa trên role
-    let created;
-    if (role === 'nurse') {
-      created = await Nurse.create({
-        email,
-        password: hashPassword,
-        student_id,
-        card_id
-      });
-    } else if (role === 'elderly') {
-      created = await Elderly.create({
-        email,
-        password: hashPassword,
-        card_id
-      });
-    }
-  
-    // 5. Xóa password trước khi trả về
-    created.password = undefined;
-  
-    return {
-      message: 'User created successfully',
-      user: created
-    };
-  } catch (err) {
+  // Hash mật khẩu
+  const hashPassword = await bcrypt.hash(password, 12);
 
-    if (err.code === 11000) {
-      const field = Object.keys(err.keyValue)[0];
-      throw new ApiError(409, `${field} đã tồn tại`);
-    }
-    if (err.name === 'ValidationError') {
-      throw new ApiError(400, err.message);
-    }
-    throw new ApiError(500, 'Internal server error');
-  }
+  // Tạo user qua discriminator
+  const newUserData = { email, role, password: hashPassword };
+  if (role === 'nurse') newUserData.student_id = student_id;
+  const created =
+    role === 'nurse'
+      ? await Nurse.create(newUserData)
+      : await Elderly.create(newUserData);
+
+  // Gửi OTP xác thực email
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  const otpKey = `otp:${created.email}`;
+  await redis.set(otpKey, otp, 'EX', 300);
+  await sendVerificationEmail(created.email, otp);
+
+  const user = created.toObject();
+  delete user.password;
+  return { message: 'User created. Please verify email.', user };
 };
 
+
 const loginService = async (email, password) => {
-  try {
-    // 1. Tìm user theo email
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new ApiError(401, 'Invalid Email/Password');
-    }
+  if (!email || !password) throw new ApiError(400, 'Email và password là bắt buộc');
+  const user = await User.findOne({ email });
+  if (!user || !user.password) throw new ApiError(401, 'Invalid Email/Password');
+  if (!user.email_verified) throw new ApiError(403, 'Email chưa được xác thực');
 
-    // 2. So sánh mật khẩu
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new ApiError(401, 'Invalid Email/Password');
-    }
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) throw new ApiError(401, 'Invalid Email/Password');
 
-    // 3. Tạo payload cho JWT
-    const payload = {
-      user_id: user.user_id,
-      email: user.email,
-      role: user.role, // Thêm role nếu cần
-    };
+  const payload = { user_id: user.user_id, email: user.email, role: user.role };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
 
-    // 4. Tạo access token
-    const access_token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE }
-    );
+  // Ghi session login
+  await createLoggingSession({
+  user_id: user.user_id,
+  role: user.role,
+  token,
+  card_id: user.card_id || null
+});
 
-    // 5. Trả về token và thông tin user
-    return {
-      access_token,
-      user: {
-        user_id: user.user_id,
-        email: user.email,
-        role: user.role, // Thêm role nếu cần
-      },
-    };
-  } catch (err) {
-    // 6. Xử lý lỗi
-    console.error(err);
-    throw new ApiError(500, 'Internal Server Error');
-  }
+  return { access_token: token, user: { user_id: user.user_id, email: user.email, role: user.role } };
 };
 
 const sendVerifyEmailService = async (email) => {
-  if (!email) {
-    throw new ApiError(400, 'Email is required');
-  }
-
- 
-  const otp = crypto.randomInt(100000, 999999).toString();
-
-
+  if (!email) throw new ApiError(400, 'Email is required');
+  const otp = crypto.randomInt(100000, 1000000).toString();
   const otpKey = `otp:${email}`;
-  await redis.set(otpKey, otp, 'EX', 300); // EX: thời gian hết hạn là 300 giây (5 phút)
+  await redis.set(otpKey, otp, 'EX', 300);
+  await sendVerificationEmail(email, otp);
+  return { message: 'OTP sent to email' };
+};
 
-  await sendVerificationEmail(email,otp);
-}
 
 const verifyAccountService = async (email, otp) => {
-
-  if (!email || !otp) {
-    throw new ApiError(400, 'Email and OTP are required');
-  }
-
+  if (!email || !otp) throw new ApiError(400, 'Email and OTP are required');
   const otpKey = `otp:${email}`;
-  const storedOtp = await redis.get(otpKey);
+  const stored = await redis.get(otpKey);
+  if (!stored) throw new ApiError(400, 'OTP has expired or is invalid');
+  if (stored !== otp) throw new ApiError(400, 'Invalid OTP');
 
-  if (!storedOtp) {
-    throw new ApiError(400, 'OTP has expired or is invalid');
-  }
-
-  if (storedOtp !== otp) {
-    throw new ApiError(400, 'Invalid OTP');
-  }
-
-  // Xóa OTP sau khi xác thực thành công
   await redis.del(otpKey);
-  
-  const user = await User.findOneAndUpdate(
-    { email },
-    { email_verified: true },
-    { new: true }
-  );
+  const user = await User.findOneAndUpdate({ email }, { email_verified: true }, { new: true });
+  if (!user) throw new ApiError(404, 'User not found');
+  return { message: 'Email verified successfully' };
+};
 
-   if (!user) {
-    throw new ApiError(404, 'User not found');
-  }
+const updateUserService = async (user_id, updateData) => {
+  const allowed = ['email', 'password'];
+  const data = {};
+  for (const field of allowed) if (updateData[field]) data[field] = updateData[field];
+  if (data.password) data.password = await bcrypt.hash(data.password, 12);
 
-  return { message: 'Email verified successfully', user };
-}
+  const user = await User.findOneAndUpdate({ user_id }, data, { new: true, runValidators: true });
+  if (!user) throw new ApiError(404, 'User not found');
+  user.password = undefined;
+  return user;
+};
 
-const updateUserService = async (userId, updateData) => {
-  const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
-  if (!user) {
-    throw new ApiError(404, 'User not found')
-  }
-  return user
-}
-
-const deleteUserService = async (userId) => {
-  const user = await User.findByIdAndDelete(userId)
-  if (!user) {
-    throw new ApiError(404, 'User not found')
-  }
-  return user
-}
+const deleteUserService = async (user_id) => {
+  const user = await User.findOneAndDelete({ user_id });
+  if (!user) throw new ApiError(404, 'User not found');
+  return { message: 'User deleted' };
+};
 
 module.exports = {
   getAllUsersService,
