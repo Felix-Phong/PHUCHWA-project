@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
 const addressSchema = new mongoose.Schema({
   street: { type: String, default: null },
@@ -7,7 +8,12 @@ const addressSchema = new mongoose.Schema({
 }, { _id: false });
 
 const elderlySchema = new mongoose.Schema({
-  user_id: {
+  elderly_id: {
+    type: String,
+    required: true,
+    unique: true,
+    default: uuidv4
+  },user_id: {
     type: String,
     ref: 'User',
     required: true
