@@ -45,18 +45,6 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password trước khi lưu nếu role = elderly
-userSchema.pre('save', async function(next) {
-  if (this.role === 'elderly' && this.isModified('password')) {
-    try {
-      const salt = await bcrypt.genSalt(12);
-      this.password = await bcrypt.hash(this.password, salt);
-    } catch (err) {
-      return next(err);
-    }
-  }
-  next();
-});
 
 const User = mongoose.model('User', userSchema);
 

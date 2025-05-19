@@ -1,50 +1,42 @@
+// services/cardService.js
 const Card = require('../models/CardModel');
 const ApiError = require('../utils/apiError');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
+const QRCode = require('qrcode');             // 1. import qrcode
 
-// Hàm hash student_id (SHA256)
 function hashStudentId(student_id) {
   return crypto.createHash('sha256').update(student_id).digest('hex');
 }
-
-// Sinh ECC keypair
 function generateECCKeyPair() {
   const key = EC.genKeyPair();
-  const publicKey = key.getPublic('hex');
-  const privateKey = key.getPrivate('hex');
-  return { publicKey, privateKey };
+  return { publicKey: key.getPublic('hex'), privateKey: key.getPrivate('hex') };
 }
-
-// Mã hóa private key (ví dụ base64, thực tế nên dùng giải pháp bảo mật hơn)
 function encryptPrivateKey(privateKey) {
   return Buffer.from(privateKey).toString('base64');
 }
 
+// 2. Service tạo card và QR image
 const createCardService = async ({ user_id, student_id, role }) => {
   try {
     const card_id = uuidv4();
-
-    // Sinh ECC keypair
     const { publicKey, privateKey } = generateECCKeyPair();
     const private_key_encrypted = encryptPrivateKey(privateKey);
 
-    // Hash student_id nếu là nurse
-    let hashed_student_id = undefined;
+    let hashed_student_id = null;
     if (role === 'nurse' && student_id) {
       hashed_student_id = hashStudentId(student_id);
     }
 
-    // Tạo dữ liệu QR code
-    const qr_code_data = JSON.stringify({
-      card_id,
-      user_id,
-      public_key: publicKey
-    });
+    // Chuẩn bị nội dung JSON cho QR
+    const payload = { card_id, user_id, public_key: publicKey };
+    const jsonString = JSON.stringify(payload);
 
-    // Tạo card
+    // Chuyển JSON thành hình data URI QR code
+    const qr_code_data = await QRCode.toDataURL(jsonString);
+
     const card = await Card.create({
       card_id,
       hashed_student_id,
@@ -54,7 +46,6 @@ const createCardService = async ({ user_id, student_id, role }) => {
       private_key_encrypted,
       qr_code_data
     });
-
     return card;
   } catch (err) {
     if (err.code === 11000) {
@@ -62,6 +53,16 @@ const createCardService = async ({ user_id, student_id, role }) => {
     }
     throw new ApiError(500, 'Internal server error');
   }
+};
+
+// 3. Service list/paginate cards
+const listCardsService = async ({ page = 1, limit = 20 }) => {
+  const skip = (page - 1) * limit;
+  const [cards, total] = await Promise.all([
+    Card.find().skip(skip).limit(limit),
+    Card.countDocuments()
+  ]);
+  return { cards, total, page, limit };
 };
 
 const getCardByCardIdService = async (card_id) => {
@@ -87,8 +88,10 @@ const deleteCardService = async (card_id) => {
   if (!card) throw new ApiError(404, 'Card not found');
   return { message: 'Card deleted' };
 };
+
 module.exports = {
   createCardService,
+  listCardsService,
   getCardByCardIdService,
   getCardByUserIdService,
   updateCardService,

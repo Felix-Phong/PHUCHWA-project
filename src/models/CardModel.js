@@ -1,46 +1,88 @@
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid'); 
+const { v4: uuidv4 } = require('uuid');
 
 const cardSchema = new mongoose.Schema({
   card_id: {
     type: String,
     required: true,
     unique: true,
-    default: uuidv4,
-    description: 'ID duy nhất của thẻ (có thể là QR code hoặc mã NFC).'
+    default: uuidv4
   },
   hashed_student_id: {
     type: String,
-    description: 'Băm ID sinh viên của nurse, liên kết với collection nurses.'
+    default: null
   },
   user_id: {
     type: String,
-    description: 'ID người dùng elderly, liên kết với collection elderlies.'
+    default: null
   },
   role: {
     type: String,
     enum: ['nurse', 'elderly'],
     required: true
   },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'revoked', 'lost'],
+    default: 'active'
+  },
+  issued_by: {
+    type: String,
+    default: 'Green Card Company'
+  },
+  issued_at: {
+    type: Date,
+    default: Date.now
+  },
+  expired_at: {
+    type: Date,
+    default: null
+  },
+  last_used_at: {
+    type: Date,
+    default: null
+  },
   public_key: {
     type: String,
-    required: true,
-    description: 'Khóa công khai để xác thực chữ ký số.'
+    required: true
   },
   private_key_encrypted: {
     type: String,
-    required: true,
-    description: 'Khóa riêng tư được mã hóa để bảo mật.'
+    required: true
   },
   qr_code_data: {
     type: String,
     required: true,
-    description: 'Dữ liệu QR code chứa thông tin liên quan đến thẻ.'
+    match: /^data:image\/(?:[a-zA-Z+\-.]+);base64,[A-Za-z0-9+/=]+$/
   },
-  created_at: {
-    type: Date,
-    default: Date.now
+  signature: {
+    type: String,
+    required: true
   }
+}, {
+  collection: 'cards',
+  timestamps: true,
+  strict: true
+});
+
+// Virtual to compute role if not set
+cardSchema.pre('validate', function(next) {
+  if (!this.role) {
+    this.role = this.hashed_student_id ? 'nurse' : 'elderly';
+  }
+  if (!this.signature) {
+    this.signature = `${this.hashed_student_id || ''}${this.card_id}${this.user_id || ''}`;
+  }
+  next();
+});
+
+// Set expired_at automatically for nurse if not provided
+cardSchema.pre('save', function(next) {
+  if (this.role === 'nurse' && !this.expired_at) {
+    // +2 years in ms
+    this.expired_at = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000);
+  }
+  next();
 });
 
 const Card = mongoose.model('Card', cardSchema);

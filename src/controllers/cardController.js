@@ -6,19 +6,28 @@ const {
   deleteCardService
 } = require('../services/cardService');
 
-const createCard = async (req, res) => {
+const createCard = async (req, res, next) => {
   try {
-    const card = await createCardService(req.body);
-    res.status(201).json({
-      status: 'success',
-      data: {
-        card,
-      },
-    });
-  } catch (error) {
-    next(error);
+    const { user_id, role } = req.user;
+    const { student_id } = req.body;
+    const card = await createCardService({ user_id, student_id, role });
+    res.status(201).json({ success: true, data: card });
+  } catch (err) {
+    next(err);
   }
-}
+};
+
+ // Danh sách card có phân trang (admin)
+const listCards = async (req, res, next) => {
+  try {
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const result = await listCardsService({ page, limit });
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
 
 const getCardByCardId = async (req, res, next) => {
   try {
@@ -61,5 +70,6 @@ module.exports = {
   getCardByCardId,
   getCardByUserId,
   updateCard,
-  deleteCard
+  deleteCard,
+  listCards
 };

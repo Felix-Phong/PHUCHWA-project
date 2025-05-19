@@ -4,7 +4,7 @@ const ApiError = require('../utils/apiError')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const saltRounds = 10;
+const saltRounds = 12;
 const {sendVerificationEmail} = require('./helperService')
 const redis = require('../../config/redisClient') 
 const {createLoggingSession} = require('./logginSessionService')
@@ -42,8 +42,9 @@ const createUserService = async ({ email, password, role, student_id }) => {
   if (role === 'nurse' && await User.findOne({ student_id })) throw new ApiError(409, 'Student ID đã tồn tại');
 
   // Hash mật khẩu
-  const hashPassword = await bcrypt.hash(password, 12);
-
+  const hashPassword = await bcrypt.hash(password, saltRounds);
+  console.log('password:', password);
+  console.log('Hashed password:', hashPassword);
   // Tạo user qua discriminator
   const newUserData = { email, role, password: hashPassword };
   if (role === 'nurse') newUserData.student_id = student_id;

@@ -1,6 +1,6 @@
 const express = require('express');
 const { getNurseById, createNurseProfile} = require('../controllers/nurseController');
-const {auth} = require('../middleware/auth');
+const {auth,permit} = require('../middleware/auth');
 const router = express.Router();
 
 /**
@@ -52,8 +52,7 @@ const router = express.Router();
  *         description: Lỗi máy chủ
  */
 
-router.get('/:id', auth, getNurseById);
-
+router.get('/:id', auth, permit('nurse'), getNurseById);
 /**
  * @swagger
  * /nurses/profile:
@@ -155,6 +154,6 @@ router.get('/:id', auth, getNurseById);
  *       500:
  *         description: Lỗi máy chủ
  */
-router.post('/profile',auth,createNurseProfile);
+router.post('/profile',  auth, permit('nurse'), createNurseProfile);
 
 module.exports = router;

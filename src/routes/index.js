@@ -2,6 +2,7 @@ const express = require('express');
 const userRoutes = require('./userRoutes');
 const nurseRoutes = require('./nurseRoute'); 
 const cardRoutes = require('./cardRoute'); 
+const elderlyRoutes = require('./elderlyRoute');
 const delay = require('../middleware/delay');
 const {auth} = require('../middleware/auth'); // Import middleware auth nếu cần
 // Nếu có thêm routes khác, import ở đây
@@ -16,6 +17,7 @@ routerAPI.use(delay);
 routerAPI.use('/users', userRoutes);
 routerAPI.use('/nurses', auth, nurseRoutes); 
 routerAPI.use('/cards', auth, cardRoutes);
+routerAPI.use('/elderly', auth, elderlyRoutes);
 // Ví dụ thêm nếu có productRoutes
 // routerAPI.use('/products', productRoutes);
 
