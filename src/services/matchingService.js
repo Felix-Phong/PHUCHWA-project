@@ -1,27 +1,44 @@
 const Matching = require('../models/MatchingModel');
+const Contract = require('../models/ContractModel');
 const ApiError = require('../utils/apiError');
+const {sendVerificationEmail} = require('../services/helperService');
+const {User} = require('../models/UserModel');
+const Nurse = require('../models/NurseModel');
+const redis = require('../../config/redisClient') 
+const crypto = require('crypto');
 
-const createMatchingService = async () => ({nurse_id, elderly_id,service_level,booking_time}) => {
-  try {
-    if (!nurse_id || !elderly_id || !service_level || !booking_time) {
-    throw new ApiError(400, 'Missing required fields for matching creation');
+const OTP_EXPIRE_SEC = 3600; // 1 hour
+
+const createMatchingService = async (user, { nurse_id, service_level, booking_time }) => {
+  if (user.role !== 'elderly') {
+    throw new ApiError(403, 'Only elderly can create matching');
   }
-  if (!Array.isArray(booking_time) || booking_time.some(bt => !bt.start_time || !bt.end_time)) {
+  if (!nurse_id || !service_level || !booking_time) {
+    throw new ApiError(400, 'Missing required fields');
+  }
+  if (!Array.isArray(booking_time) ||
+      booking_time.some(bt => !bt.start_time || !bt.end_time)) {
     throw new ApiError(400, 'Invalid booking_time format');
   }
 
-    const newMatching = new Matching.create({
-      nurse_id,
-      elderly_id,
-      service_level,
-      booking_time,
-      resetAt: new Date()
-    });
-   
-    return newMatching;
-  } catch (error) {
-    throw new ApiError(500, 'Error creating matching');
-  }
+  const newMatch = await Matching.create({
+    nurse_id,
+    elderly_id:   user.user_id,
+    service_level,
+    booking_time,
+    contract_status: {
+      elderly_signature: null,
+      nurse_signature:   null,
+      contract_hash:     null,
+      is_signed:         false
+    },
+    violation_report: null,
+    isMatched:       false,
+    matchedAt:       null,
+    resetAt:         new Date()
+  });
+
+  return newMatch;
 };
 
 const listMatchingService = async ({ page = 1, limit = 20, isMatched, service_level }) => {
@@ -119,6 +136,75 @@ const deleteMatchingService = async (id) => {
   return { message: 'Matching deleted' };
 };
 
+async function requestSignOtpService(matchingId, role, email) {
+  if (!['elderly','nurse'].includes(role)) {
+    throw new ApiError(400,'Role phải là elderly hoặc nurse');
+  }
+  // Tạo OTP 6 chữ số
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  // Lưu Redis: key = matching:{id}:sign:{role}, value = otp
+  const key = `matching:${matchingId}:sign:${role}`;
+  await redis.set(key, otp, 'EX', OTP_EXPIRE_SEC);
+  // Gửi email
+  await sendVerificationEmail(email, otp);
+  return { message: `OTP đã gửi đến email của ${role}` };
+}
+
+async function confirmSignContractService(matchingId, role, otp, userId) {
+  if (!['elderly','nurse'].includes(role)) {
+    throw new ApiError(400, 'Role phải là "elderly" hoặc "nurse"');
+  }
+
+  // 1. Kiểm tra OTP
+  const key = `matching:${matchingId}:sign:${role}`;
+  const storedOtp = await redis.get(key);
+  if (!storedOtp) throw new ApiError(400, 'OTP đã hết hạn hoặc không tồn tại');
+  if (storedOtp !== otp) throw new ApiError(400, 'OTP không hợp lệ');
+  await redis.del(key);
+
+  // 2. Cập nhật Matching.contract_status
+  const match = await Matching.findById(matchingId);
+  if (!match) throw new ApiError(404, 'Matching không tìm thấy');
+
+  match.contract_status = match.contract_status || {
+    elderly_signature: false,
+    nurse_signature:   false,
+    contract_hash:     null,
+    is_signed:         false
+  };
+
+  match.contract_status[`${role}_signature`] = true;
+  // nếu cần bật is_signed ở matching, giữ nguyên logic
+  if (match.contract_status.elderly_signature && match.contract_status.nurse_signature) {
+    match.contract_status.is_signed = true;
+  }
+  await match.save();
+
+  // 3. Cập nhật Contract: chỉ set chữ ký và log
+  const now = new Date();
+  const updateFields = {
+    last_modified_at: now,
+    [`signed_by_${role}`]: now,
+    [`${role}_signature`]: true
+  };
+  const historyEntry = {
+    action: `${role}_signed`,
+    modified_by: userId,
+    timestamp: now
+  };
+
+  await Contract.findOneAndUpdate(
+    { matching_id: matchingId },
+    {
+      $set: updateFields,
+      $push: { history_logs: historyEntry }
+    },
+    { new: true }
+  );
+
+  return match;
+}
+
 module.exports = {
   createMatchingService,
   listMatchingService,
@@ -128,5 +214,7 @@ module.exports = {
   reportViolationService,
   completeMatchService,
   resetMatchService,
-  deleteMatchingService
+  deleteMatchingService,
+  requestSignOtpService,
+  confirmSignContractService
 };

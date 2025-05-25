@@ -3,7 +3,8 @@ const {
   listContractsService,
   getContractByIdService,
   updateContractStatusService,
-  deleteContractService
+  deleteContractService,
+  fillContractService,
 } = require('../services/contractService');
 
 const listContracts = async (req, res, next) => {
@@ -44,9 +45,23 @@ const deleteContract = async (req, res, next) => {
   }
 };
 
+async function fillContract(req, res, next) {
+  try {
+    const updated = await fillContractService(
+      req.params.id,
+      req.body,
+      req.user.user_id
+    );
+    res.status(200).json({ success: true, data: updated });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listContracts,
   getContractById,
   updateContractStatus,
-  deleteContract
+  deleteContract,
+  fillContract
 };

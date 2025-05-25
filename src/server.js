@@ -28,7 +28,7 @@ redisClient.on('error', (err) => {
 
 // Middleware cơ bản
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: "https://frontend-domain.com" }));
 app.use(express.json());
 
 // Rate Limiting

@@ -8,19 +8,20 @@ const {
   reportViolationService,
   completeMatchService,
   resetMatchService,
-  deleteMatchingService
+  deleteMatchingService,
+   requestSignOtpService,
+  confirmSignContractService,
 } = require('../services/matchingService');
 
 const createMatching = async (req, res, next) => {
   try {
-    const { elderly_id, nurse_id, service_level, booking_time } = req.body;
-    const match = await createMatchingService({ elderly_id, nurse_id, service_level, booking_time });
+    // Truyền rõ ràng user và body
+    const match = await createMatchingService(req.user, req.body);
     res.status(201).json({ success: true, data: match });
   } catch (err) {
     next(err);
   }
 };
-
 const listMatching = async (req, res, next) => {
   try {
     const { page, limit, isMatched, service_level } = req.query;
@@ -99,6 +100,33 @@ const deleteMatching = async (req, res, next) => {
   }
 };
 
+const requestSignOtp = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const role = req.user.role;         // nurse hoặc elderly
+    const email = req.user.email;       // cần auth middleware để gắn req.user
+    const result = await requestSignOtpService(id, role, email);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const confirmSign = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const role = req.user.role;
+    const { otp } = req.body;
+    if (!otp) {
+      throw new ApiError(400, 'otp là bắt buộc');
+    }
+    const match = await confirmSignContractService(id, role, otp);
+    res.json({ success: true, data: match });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createMatching,
   listMatching,
@@ -108,5 +136,7 @@ module.exports = {
   reportViolation,
   completeMatch,
   resetMatch,
-  deleteMatching
+  deleteMatching,
+  requestSignOtp,
+  confirmSign,
 };
