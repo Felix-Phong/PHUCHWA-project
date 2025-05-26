@@ -1,27 +1,26 @@
 const mongoose = require('mongoose');
 
-const testAttemptSchema = new mongoose.Schema({
-  nurse_id: {
-    type: String,
-    ref: 'Nurse',
-    required: true
+const questionSchema = new mongoose.Schema({
+  question: { type: String, required: true },
+  difficulty: { type: String, enum: ['easy', 'medium', 'hard'], required: true },
+  options: { 
+    type: [String], 
+    validate: [arrayLimit, 'Options must have exactly 4 items'] 
   },
-  questions: [{
-    question: String,
-    difficulty: {
-      type: String,
-      enum: ['easy', 'medium', 'hard']
-    },
-    options: [String],
-    correct_answer: String,
-    user_answer: String
-  }],
-  score: {
-    type: Number,
-    min: 0,
-    max: 10
-  }
-}, { timestamps: true });
+  correct_answer: { type: String, required: true },
+  user_answer: { type: String } // Thêm trường này để lưu đáp án người dùng
+});
 
-const TestAttempt = mongoose.model('TestAttempt', testAttemptSchema);
-module.exports = TestAttempt;
+function arrayLimit(val) {
+  return val.length === 4;
+}
+
+const testAttemptSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  attempt_id: { type: String, required: true, unique: true },
+  user_id: { type: String, required: true }, // Thêm trường user_id để liên kết
+  questions: [questionSchema],
+  timestamp: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('TestAttempt', testAttemptSchema);
