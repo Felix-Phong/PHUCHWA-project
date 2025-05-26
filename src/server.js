@@ -50,7 +50,7 @@ app.use(errorHandler);
 
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port http://localhost:${PORT}`);
-  console.log(`API documentation available at http://localhost:${PORT}/api-docs`);
+app.listen(PORT,'0.0.0.0', () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port http://0.0.0.0:${PORT}`);
+  console.log(`API documentation available at http://0.0.0.0:${PORT}/api-docs`);
 });
