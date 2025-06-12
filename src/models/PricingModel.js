@@ -3,17 +3,21 @@ const mongoose = require('mongoose');
 const pricingSchema = new mongoose.Schema({
   service_level: {
     type: String,
-    enum: ['basic', 'standard', 'premium'],
+    enum: ["basic", "standard", "premium"],
+    required: true,
     unique: true
   },
-  elderly_benefits: String,
-  nurse_rewards: {
-    type: Number,
-    min: 0
+  price_range: {
+    min: { type: Number, required: true },
+    max: { type: Number, required: true }
   },
-  price: {
+  platform_share_percentage: {
     type: Number,
-    min: 0
+    required: true
+  },
+  nurse_share_percentage: {
+    type: Number,
+    required: true
   }
 });
 

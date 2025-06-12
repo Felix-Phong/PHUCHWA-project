@@ -1,31 +1,34 @@
+// models/TransactionModel.js
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
-  nurse_id: {
+  transaction_id:    { type: String, required: true, unique: true },
+  elderly_id:        { type: String, required: true },
+  nurse_id:          { type: String, required: true },
+  amount:            { type: Number, required: true, min: 0 },
+  currency:          { type: String, enum: ['VND','ETH','USDT','PlatformToken'], required: true },
+  service_type:      { type: String, enum: ['basic','standard','premium'], required: true },
+  platform_fee:      { type: Number, required: true, min: 0 },
+  nurse_receive_amount: { type: Number, required: true, min: 0 },
+  status:            { type: String, enum: ['pending','completed','failed','cancelled'], default: 'pending' },
+  payment_method:    { type: String, enum: ['bank_transfer'], required: true },
+  created_at:        { type: Date, default: Date.now },
+  updated_at:        { type: Date, default: Date.now },
+  contract_id: {
     type: String,
-    ref: 'Nurse',
-    required: true
+    ref: 'Contract'
   },
-  elderly_id: {
+  withdraw_request_id: {
     type: String,
-    ref: 'Elderly',
-    required: true
+    ref: 'WithdrawRequest'
   },
-  amount: {
-    type: Number,
-    min: 0,
-    required: true
-  },
-  service_level: {
+  note: {
     type: String,
-    enum: ['basic', 'standard', 'premium'],
-    required: true
-  },
-  nurse_commission: {
-    type: Number,
-    default: 0
+    nullable: true
   }
-}, { timestamps: true });
+}, {
+  collection: 'transactions',
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
 
-const Transaction = mongoose.model('Transaction', transactionSchema);
-module.exports = Transaction;
+module.exports = mongoose.model('Transaction', transactionSchema);

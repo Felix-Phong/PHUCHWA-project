@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const {createLog,getLogs} = require("../controllers/serviceLogController");
+const {createLog,getLogs,updateLog} = require("../controllers/serviceLogController");
 const {auth,permit} = require("../middleware/auth");
 
 /**
@@ -174,5 +174,40 @@ router.post("/create-log", auth, permit("nurse"), createLog);
 
 // Xem lịch sử log
 router.get("/get-logs", auth, getLogs);
+
+/**
+ * @swagger
+ * /service-logs/{id}:
+ *   put:
+ *     summary: Cập nhật service log (nurse hoặc admin)
+ *     tags: [ServiceLog]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của service log
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ServiceLog'
+ *     responses:
+ *       200:
+ *         description: Đã cập nhật service log thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ServiceLog'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       404:
+ *         description: Service log không tồn tại
+ */
+router.put('/:id', auth, permit('nurse', 'admin'), updateLog);
 
 module.exports = router

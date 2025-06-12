@@ -50,8 +50,20 @@ const getLogs = async (req, res, next) => {
   }
 };
 
+const updateLog = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updatedLog = await updateServiceLogService(id, req.body);
+    res.status(200).json({ success: true, data: updatedLog });
+  } catch (err) {
+    next(new ApiError(err.statusCode || 500, err.message));
+  }
+};
+
+
 
 module.exports = {
   createLog,
   getLogs,
+  updateLog
 };

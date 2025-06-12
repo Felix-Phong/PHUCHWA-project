@@ -9,6 +9,7 @@ const historyLogSchema = new mongoose.Schema({
 
 // Sub-schema cho chi tiết thanh toán
 const paymentDetailsSchema = new mongoose.Schema({
+   transaction_id: { type: String, ref: 'Transaction' },
   service_level:            { type: String, enum: ['basic','standard','premium'], default: null },
   price_per_hour:           { type: Number, default: null },
   total_hours_booked:       { type: Number, default: null },

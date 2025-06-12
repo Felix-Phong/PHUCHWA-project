@@ -5,6 +5,7 @@ const {requestSignOtpService} = require('./matchingService')
 const {User} = require('../models/UserModel');
 const Nurse = require('../models/NurseModel');
 
+
 const listContractsService = async ({ page=1, limit=20, status }) => {
   const skip = (page-1)*limit;
   const filter = {};
@@ -30,6 +31,9 @@ const updateContractStatusService = async (id, status) => {
     id, { status }, { new: true, runValidators: true }
   );
   if (!contract) throw new ApiError(404, 'Contract not found');
+
+  
+
   return contract;
 };
 
@@ -102,6 +106,7 @@ async function fillContractService(contractId, data, userId) {
 
   return contract;
 }
+
 
 
 module.exports = {

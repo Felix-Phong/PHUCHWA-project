@@ -32,6 +32,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   'http://localhost:5173', // Địa chỉ local của React (Vite)
+    'http://localhost:3000',
   'https://your-frontend-domain.com' // Domain production của frontend
 ];
 
@@ -51,7 +52,7 @@ app.use(cors({
   credentials: true // Cho phép gửi cookie qua CORS
 }));
 
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // Rate Limiting
 const limiter = rateLimit({

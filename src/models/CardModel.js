@@ -58,6 +58,12 @@ const cardSchema = new mongoose.Schema({
   signature: {
     type: String,
     required: true
+  },
+   balance: {
+    type: Number,
+    required: true,
+    default: 0,              // Khởi tạo số dư = 0
+    description: 'Số dư token/VND trong ví'
   }
 }, {
   collection: 'cards',

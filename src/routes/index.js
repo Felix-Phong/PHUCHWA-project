@@ -8,6 +8,7 @@ const matchingRoutes = require('./matchingRoute');
 const testRoutes = require('./testRoute');
 const surveyRoutes = require('./surveyRoute'); 
 const serviceLogRoutes = require('./serviceLogRoute');
+const transactionRoutes = require('./transactionRoute');
 const delay = require('../middleware/delay');
 const {auth} = require('../middleware/auth'); // Import middleware auth nếu cần
 // Nếu có thêm routes khác, import ở đây
@@ -28,7 +29,7 @@ routerAPI.use('/matching', auth, matchingRoutes);
 routerAPI.use('/test', auth, testRoutes);
 routerAPI.use('/survey', auth, surveyRoutes);
 routerAPI.use('/service-logs', auth, serviceLogRoutes);
-
+routerAPI.use('/transactions', auth, transactionRoutes);
 
 
 module.exports = routerAPI;
