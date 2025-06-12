@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 
 // Sub-schema cho lịch sử thay đổi trạng thái
 const historyLogSchema = new mongoose.Schema({
-  action:      { type: String, required: true },
-  modified_by: { type: String, required: true },
-  timestamp:   { type: Date,   required: true }
+  action:      { type: String},
+  modified_by: { type: String },
+  timestamp:   { type: Date }
 }, { _id: false });
 
 // Sub-schema cho chi tiết thanh toán

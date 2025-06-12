@@ -46,48 +46,12 @@ const {auth,permit} = require('../middleware/auth');
  *                       example: "4"
  *     responses:
  *       201:
- *         description: Kết quả bài kiểm tra đã được tính toán và lưu lại
+ *         description: Bài kiểm tra đã được nộp thành công, không có nội dung phản hồi
  *         content:
  *           application/json:
  *             schema:
  *               type: object
- *               properties:
- *                 _id:
- *                   type: string
- *                 attempt_id:
- *                   type: string
- *                 user_id:
- *                   type: string
- *                 total_questions:
- *                   type: integer
- *                 correct_answers:
- *                   type: integer
- *                 score:
- *                   type: number
- *                 current_score:
- *                   type: number
- *                 average_score:
- *                   type: number
- *                 question_details:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       question:
- *                         type: string
- *                       options:
- *                         type: array
- *                         items:
- *                           type: string
- *                       correct_answer:
- *                         type: string
- *                       user_answer:
- *                         type: string
- *                       is_correct:
- *                         type: boolean
- *                 timestamp:
- *                   type: string
- *                   format: date-time
+ *               properties: {}
  *       400:
  *         description: Dữ liệu đầu vào không hợp lệ
  */

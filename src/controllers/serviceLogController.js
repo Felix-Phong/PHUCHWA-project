@@ -4,7 +4,7 @@ const { createServiceLogService,
 } = require("../services/serviceLogService");
 const ApiError = require("../utils/apiError");
 const Nurse = require("../models/NurseModel");
-const Elderly = require("../models/ElderlyModel");
+const Elderly = require("../models/ElderiesModel");
 
 // Tạo log (Dành cho nurse)
 const createLog = async (req, res, next) => {

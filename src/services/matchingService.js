@@ -6,6 +6,7 @@ const {User} = require('../models/UserModel');
 const Nurse = require('../models/NurseModel');
 const redis = require('../../config/redisClient') 
 const crypto = require('crypto');
+const Elderly = require('../models/ElderiesModel');
 
 const OTP_EXPIRE_SEC = 3600; // 1 hour
 
@@ -20,10 +21,16 @@ const createMatchingService = async (user, { nurse_id, service_level, booking_ti
       booking_time.some(bt => !bt.start_time || !bt.end_time)) {
     throw new ApiError(400, 'Invalid booking_time format');
   }
+  // Kiểm tra nurse_id có tồn tại không
+  const nurse = await Nurse.findOne({ nurse_id });
+  if (!nurse) throw new ApiError(404, 'Nurse not found');
+
+  const elderly = await Elderly.findOne({ user_id: user.user_id });
+  
 
   const newMatch = await Matching.create({
     nurse_id,
-    elderly_id:   user.user_id,
+    elderly_id:   elderly.elderly_id,
     service_level,
     booking_time,
     contract_status: {
@@ -175,17 +182,20 @@ async function confirmSignContractService(matchingId, role, otp, userId) {
 
   match.contract_status[`${role}_signature`] = true;
   // nếu cần bật is_signed ở matching, giữ nguyên logic
+  const now = new Date();
   if (match.contract_status.elderly_signature && match.contract_status.nurse_signature) {
     match.contract_status.is_signed = true;
+    match.isMatched = true; // nếu cả 2 đã ký, coi như đã matched
+    match.matchedAt = now;
   }
   await match.save();
 
   // 3. Cập nhật Contract: chỉ set chữ ký và log
-  const now = new Date();
+  
   const updateFields = {
     last_modified_at: now,
     [`signed_by_${role}`]: now,
-    [`${role}_signature`]: true
+    [`${role}_signature`]: true,
   };
   const historyEntry = {
     action: `${role}_signed`,

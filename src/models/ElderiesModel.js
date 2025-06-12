@@ -7,7 +7,7 @@ const addressSchema = new mongoose.Schema({
   country: { type: String, default: null }
 }, { _id: false });
 
-const elderlySchema = new mongoose.Schema({
+const elderiesSchema = new mongoose.Schema({
   elderly_id: {
     type: String,
     required: true,
@@ -84,18 +84,18 @@ const elderlySchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  collection: 'Elderly',
+  collection: 'elderies',
   timestamps: { createdAt: false, updatedAt: 'updated_at' },
   strict: true
 });
 
 // Virtual guard: ensure required fields
-elderlySchema.pre('validate', function(next) {
+elderiesSchema.pre('validate', function(next) {
   if (!this.email_verified && this.hashed_password) {
     // keep allow
   }
   next();
 });
 
-const Elderly = mongoose.model('Elderly', elderlySchema);
+const Elderly = mongoose.model('elderies', elderiesSchema);
 module.exports = Elderly;

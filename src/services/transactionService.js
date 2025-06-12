@@ -1,7 +1,7 @@
   // services/transactionService.js
   const Transaction = require('../models/TransactionModel');
   const ApiError    = require('../utils/apiError');
-  const Elderly     = require('../models/ElderlyModel');
+  const Elderly     = require('../models/ElderiesModel');
   const Contract = require('../models/ContractModel');
 const Pricing = require('../models/PricingModel');
   const { v4: uuidv4 } = require('uuid')

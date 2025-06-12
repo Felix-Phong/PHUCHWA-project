@@ -1,6 +1,6 @@
 const SurveyAttempt = require("../models/SurveyAttemptModel");
 const ApiError = require("../utils/apiError");
-const Elderly = require("../models/ElderlyModel");
+const Elderly = require("../models/ElderiesModel");
 const Matching = require("../models/MatchingModel");
 
 // 1. Submit Survey Attempt

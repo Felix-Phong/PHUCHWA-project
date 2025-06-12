@@ -1,5 +1,5 @@
 // services/elderlyService.js
-const  Elderly  = require('../models/ElderlyModel');      
+const  Elderly  = require('../models/ElderiesModel');      
 const {User} = require('../models/UserModel');
 const ApiError = require('../utils/apiError');
 const {createCardService} = require('../services/cardService');

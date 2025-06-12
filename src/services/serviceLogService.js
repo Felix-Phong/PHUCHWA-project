@@ -1,7 +1,7 @@
 const ServiceLog = require("../models/ServiceLogModel");
 const ApiError = require("../utils/apiError");
 const Nurse = require("../models/NurseModel");
-const Elderly = require("../models/ElderlyModel");
+const Elderly = require("../models/ElderiesModel");
 
 // 1. Tạo Service Log
 const createServiceLogService = async (logData,nurseUserId) => {
@@ -17,10 +17,12 @@ const createServiceLogService = async (logData,nurseUserId) => {
   }
 
    // 2. Tìm elderly dựa trên elderly_id từ request body
-  const elderlyExists = await Elderly.findOne({ _id: logData.elderly_id });
+  const elderlyExists = await Elderly.findOne({ elderly_id: logData.elderly_id });
   if (!elderlyExists) {
     throw new ApiError(404, "Elderly không tồn tại");
   }
+
+  
  
   // 3. Tạo log với nurse_id lấy từ nurse document
   const log = await ServiceLog.create({

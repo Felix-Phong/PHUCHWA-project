@@ -43,8 +43,7 @@ const createUserService = async ({ email, password, role, student_id }) => {
 
   // Hash mật khẩu
   const hashPassword = await bcrypt.hash(password, saltRounds);
-  console.log('password:', password);
-  console.log('Hashed password:', hashPassword);
+  
   // Tạo user qua discriminator
   const newUserData = { email, role, password: hashPassword };
   if (role === 'nurse') newUserData.student_id = student_id;

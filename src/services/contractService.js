@@ -90,8 +90,10 @@ async function fillContractService(contractId, data, userId) {
   // 7. Gửi OTP cho Nurse
   try {
     const nurseProfile = await Nurse.findOne({ nurse_id: contract.nurse_id });
+      console.log(nurseProfile);
     if (nurseProfile) {
       const nurseUser = await User.findOne({ user_id: nurseProfile.user_id });
+        console.log(nurseUser);
       if (nurseUser) {
         await requestSignOtpService(
           contract.matching_id,
@@ -103,7 +105,6 @@ async function fillContractService(contractId, data, userId) {
   } catch (e) {
     console.error('Failed to send OTP to Nurse:', e);
   }
-
   return contract;
 }
 
