@@ -11,7 +11,8 @@ const {
   updateUser,
   deleteUser,
   sendVerifyEmail,
-  verifyAccount
+  verifyAccount,
+  QRLogin
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -229,8 +230,6 @@ router.post('/send-verify-email', sendVerifyEmail);
  */
 router.post('/verify-account', verifyAccount);
 
-// Protected routes (require bearer token)
-router.use(auth);
 
 /**
  * @swagger
@@ -250,7 +249,7 @@ router.use(auth);
  *       401:
  *         description: Unauthorized hoặc token hết hạn
  */
-router.post('/logout', updateLogout);
+router.post('/logout',auth, updateLogout);
 
 /**
  * @swagger
@@ -270,7 +269,7 @@ router.post('/logout', updateLogout);
  *       401:
  *         description: Unauthorized
  */
-router.get('/account', getAccount);
+router.get('/account',auth, getAccount);
 
 /**
  * @swagger
@@ -310,7 +309,7 @@ router.get('/account', getAccount);
  *                 limit:
  *                   type: integer
  */
-router.get('/', getAllUsers);
+router.get('/',auth, getAllUsers);
 
 /**
  * @swagger
@@ -337,7 +336,7 @@ router.get('/', getAllUsers);
  *       404:
  *         description: User not found
  */
-router.get('/:id', getUserById);
+router.get('/:id', auth,getUserById);
 
 /**
  * @swagger
@@ -375,7 +374,7 @@ router.get('/:id', getUserById);
  *       404:
  *         description: User not found
  */
-router.put('/:id', updateUser);
+router.put('/:id', auth,updateUser);
 
 /**
  * @swagger
@@ -398,6 +397,57 @@ router.put('/:id', updateUser);
  *       404:
  *         description: User not found
  */
-router.delete('/:id', deleteUser);
+router.delete('/:id',auth, deleteUser);
+
+/**
+ * @swagger
+ * /users/qr-login:
+ *   post:
+ *     summary: Đăng nhập bằng QR Code (upload file ảnh QR)
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               qrImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: File ảnh QR code (PNG/JPG)
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     access_token:
+ *                       type: string
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         user_id:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *       400:
+ *         description: Không đọc được QR code hoặc QR code không hợp lệ
+ *       404:
+ *         description: Card hoặc user không tồn tại
+ */
+const multer = require('multer');
+const upload = multer();
+router.post('/qr-login', upload.single('qrImage'), QRLogin);
+
 
 module.exports = router;

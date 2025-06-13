@@ -5,8 +5,11 @@ const {
   deleteUserService,
   updateUserService,
   sendVerifyEmailService,
-  verifyAccountService} = require('../services/userService')
+  verifyAccountService,
+  QRLoginService,
+} = require('../services/userService')
 const {updateLogoutTime} = require('../services/logginSessionService')
+const ApiError = require('../utils/apiError');
 
 const createUser = async (req, res, next) => {
   try {
@@ -125,6 +128,16 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const QRLogin = async (req, res, next) => {
+ try {
+    if (!req.file) throw new ApiError(400, 'Chưa upload file QR');
+    const result = await QRLoginService(req.file.buffer);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -135,6 +148,7 @@ module.exports = {
   updateUser,
   deleteUser,
   sendVerifyEmail,
-  verifyAccount
+  verifyAccount,
+  QRLogin,
 };
 

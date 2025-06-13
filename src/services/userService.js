@@ -1,4 +1,6 @@
 require('dotenv').config()
+
+const jsQR = require('jsqr');
 const {User, Nurse, Elderly} = require('../models/UserModel')
 const ApiError = require('../utils/apiError')
 const jwt = require('jsonwebtoken')
@@ -8,6 +10,9 @@ const saltRounds = 12;
 const {sendVerificationEmail} = require('./helperService')
 const redis = require('../../config/redisClient') 
 const {createLoggingSession} = require('./logginSessionService')
+const Card = require('../models/CardModel');
+const JimpModule = require('jimp');
+const Jimp = JimpModule.Jimp; // Lấy class Jimp từ object
 
 
 const getAllUsersService = async ({ page = 1, limit = 20 }) => {
@@ -87,6 +92,58 @@ const loginService = async (email, password) => {
   return { access_token: token, user: { user_id: user.user_id, email: user.email, role: user.role } };
 };
 
+const QRLoginService = async (fileBuffer) => {
+  // 1. Đọc ảnh từ buffer
+  const img = await Jimp.read(fileBuffer);
+  const { data, width, height } = img.bitmap;
+
+  // 2. Giải mã QR
+  const code = jsQR(data, width, height);
+  if (!code) throw new ApiError(400, 'Không đọc được QR code');
+
+  // 3. Parse payload từ QR code
+  let payload;
+  try {
+    payload = JSON.parse(code.data);
+  } catch (err) {
+    throw new ApiError(400, 'QR code không đúng định dạng');
+  }
+
+  // 4. Lookup Card theo card_id hoặc public_key
+  const card = await Card.findOne({ card_id: payload.card_id });
+  if (!card || card.user_id !== payload.user_id) {
+    throw new ApiError(404, 'Card không tồn tại hoặc không khớp');
+  }
+  if (card.status !== 'active') {
+    throw new ApiError(403, 'Card bị vô hiệu');
+  }
+
+  // 5. Lấy user, tạo JWT và session
+  const user = await User.findOne({ user_id: card.user_id });
+  if (!user) throw new ApiError(404, 'User không tồn tại');
+
+  const jwtPayload = {
+    user_id: user.user_id,
+    email:   user.email,
+    role:    card.role,
+    card_id: card.card_id
+  };
+  const token = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+
+  await createLoggingSession({
+    user_id: user.user_id,
+    role: card.role,
+    token,
+    card_id: card.card_id
+  });
+
+  return {
+    access_token: token,
+    user: { user_id: user.user_id, email: user.email, role: card.role }
+  };
+};
+
+
 const sendVerifyEmailService = async (email) => {
   if (!email) throw new ApiError(400, 'Email is required');
   const otp = crypto.randomInt(100000, 1000000).toString();
@@ -136,5 +193,6 @@ module.exports = {
   verifyAccountService,
   sendVerifyEmailService,
   updateUserService,
-  deleteUserService
+  deleteUserService,
+  QRLoginService
 }
