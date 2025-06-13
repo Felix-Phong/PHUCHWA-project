@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {submitTest,getTestHistory} = require('../controllers/testController');
+const { addTestQuestions } = require('../controllers/testController');
 const {auth,permit} = require('../middleware/auth');
 
 
@@ -114,4 +115,73 @@ router.post('/submit', auth, permit('nurse'), submitTest);
  */
 router.get('/history', auth, getTestHistory); //admin
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TestQuestion:
+ *       type: object
+ *       required:
+ *         - question
+ *         - difficulty
+ *         - options
+ *         - correct_answer
+ *       properties:
+ *         question:
+ *           type: string
+ *           description: Nội dung câu hỏi
+ *         difficulty:
+ *           type: string
+ *           enum: [easy, medium, hard]
+ *           description: Độ khó
+ *         options:
+ *           type: array
+ *           items:
+ *             type: string
+ *           minItems: 4
+ *           maxItems: 4
+ *           description: Danh sách 4 đáp án
+ *         correct_answer:
+ *           type: string
+ *           description: Đáp án đúng
+ */
+
+/**
+ * @swagger
+ * /test/questions:
+ *   post:
+ *     summary: Đăng câu hỏi kiểm tra (admin)
+ *     tags: [Test]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [questions]
+ *             properties:
+ *               questions:
+ *                 type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/TestQuestion'
+ *     responses:
+ *       201:
+ *         description: Đã thêm câu hỏi thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/TestQuestion'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ */
+router.post('/questions', auth, addTestQuestions);//admin
 module.exports = router;

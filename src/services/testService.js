@@ -1,6 +1,7 @@
 const TestAttempt = require('../models/TestAttemptModel');
 const TestResult = require('../models/TestResultModel');
 const ApiError = require('../utils/apiError');
+const TestQuestion = require('../models/TestQuestionModel '); 
 
 // 1. Tạo Test Attempt
 const createTestAttemptService = async (userId, questions) => {
@@ -114,8 +115,19 @@ const getTestResultsByUserService = async (userId) => {
   return TestResult.find({ user_id: userId }).sort({ timestamp: -1 });
 };
 
+const addTestQuestionsService = async (questions) => {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    throw new Error('questions is required and must be an array');
+  }
+  // Có thể thêm validate từng câu hỏi ở đây nếu muốn
+  const inserted = await TestQuestion.insertMany(questions);
+  return inserted;
+};
+
+
 module.exports = {
   createTestAttemptService,
   calculateTestResultService,
   getTestResultsByUserService,
+  addTestQuestionsService,
 };

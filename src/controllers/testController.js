@@ -1,6 +1,6 @@
 const {createTestAttemptService,calculateTestResultService,getTestResultsByUserService} = require('../services/testService');
 const ApiError = require('../utils/apiError');
-
+const { addTestQuestionsService } = require('../services/testService');
 // Submit Test Attempt
 const submitTest = async (req, res, next) => {
   try {
@@ -23,7 +23,18 @@ const getTestHistory = async (req, res, next) => {
   }
 };
 
+const addTestQuestions = async (req, res, next) => {
+  try {
+    const { questions } = req.body;
+    const inserted = await addTestQuestionsService(questions);
+    res.status(201).json({ success: true, data: inserted });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   submitTest,
-  getTestHistory
+  getTestHistory,
+  addTestQuestions
 };
