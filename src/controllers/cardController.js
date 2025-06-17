@@ -3,7 +3,8 @@ const {
   getCardByCardIdService,
   getCardByUserIdService,
   updateCardService,
-  deleteCardService
+  deleteCardService,
+  listCardsService
 } = require('../services/cardService');
 
 const createCard = async (req, res, next) => {

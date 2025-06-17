@@ -79,6 +79,13 @@ const elderiesSchema = new mongoose.Schema({
     default: null,
     match: /^data:image\/(?:[a-zA-Z+\-.]+);base64,[A-Za-z0-9+/=]+$/
   },
+    evm_address: {
+    type: String,
+    unique: true,
+    sparse: true, // Cho phép giá trị null (nếu một số elderly không có địa chỉ EVM)
+    match: /^0x[a-fA-F0-9]{40}$/, // Đảm bảo định dạng địa chỉ EVM
+    nullable: true // Có thể null
+  },
   updated_at: {
     type: Date,
     default: Date.now

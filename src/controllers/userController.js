@@ -1,5 +1,6 @@
 const {
   getAllUsersService,
+  getUserByIdService,
   createUserService,
   loginService,
   deleteUserService,

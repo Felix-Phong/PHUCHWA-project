@@ -19,6 +19,9 @@ const pricingSchema = new mongoose.Schema({
     type: Number,
     required: true
   }
+}, {
+  collection: 'pricing',
+  timestamps: false
 });
 
 const Pricing = mongoose.model('Pricing', pricingSchema);

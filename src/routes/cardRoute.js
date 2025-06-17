@@ -98,7 +98,7 @@ router.post('/', createCard);
  *               page: 1
  *               limit: 20
  */
-router.get('/', permit('admin'), listCards);
+router.get('/',  listCards);//admin
 
 /**
  * @swagger

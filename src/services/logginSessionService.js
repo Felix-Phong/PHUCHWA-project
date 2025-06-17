@@ -4,7 +4,7 @@ const ApiError = require('../utils/apiError');
 // Tạo phiên đăng nhập mới
 const createLoggingSession = async ({ user_id, role, token, card_id = null, signature = null }) => {
   try {
-        console.log('Creating session with token:', token);
+      
 
     const session = await LoginSession.create({
       user_id, role, token, card_id, signature

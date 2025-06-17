@@ -1,5 +1,4 @@
 const express = require('express');
-const router  = express.Router();
 const { auth, permit } = require('../middleware/auth');
 const {
   createFromContract,
@@ -7,8 +6,11 @@ const {
   refund,
   getUserTransactions,
   listTransactions,
+  getTransactionById,
   updateTransactionStatus
 } = require('../controllers/transactionController');
+
+const router = express.Router();
 
 /**
  * @swagger
@@ -16,78 +18,48 @@ const {
  *   schemas:
  *     Transaction:
  *       type: object
- *       required:
- *         - transaction_id
- *         - elderly_id
- *         - nurse_id
- *         - amount
- *         - currency
- *         - service_type
- *         - platform_fee
- *         - nurse_receive_amount
- *         - status
- *         - payment_method
- *         - created_at
- *         - updated_at
  *       properties:
  *         transaction_id:
  *           type: string
- *           description: ID giao dịch duy nhất (UUIDv4)
+ *         contract_id:
+ *           type: string
  *         elderly_id:
  *           type: string
- *           description: ID elderly thực hiện thanh toán
  *         nurse_id:
  *           type: string
- *           description: ID nurse nhận thanh toán
  *         amount:
  *           type: number
- *           minimum: 0
- *           description: Số tiền thanh toán
  *         currency:
  *           type: string
- *           enum: [VND, ETH, USDT, PlatformToken]
- *           description: Loại tiền tệ
+ *           enum: [VND, PlatformToken]
  *         service_type:
  *           type: string
  *           enum: [basic, standard, premium]
- *           description: Loại dịch vụ
  *         platform_fee:
  *           type: number
- *           minimum: 0
- *           description: Phí nền tảng
  *         nurse_receive_amount:
  *           type: number
- *           minimum: 0
- *           description: Số tiền nurse nhận
+ *         payment_method:
+ *           type: string
+ *           enum: [bank_transfer, smart_contract_transfer]
  *         status:
  *           type: string
  *           enum: [pending, completed, failed, cancelled]
- *           description: Trạng thái giao dịch
- *         payment_method:
+ *         note:
  *           type: string
- *           enum: [bank_transfer]
- *           description: Phương thức thanh toán
  *         created_at:
  *           type: string
  *           format: date-time
  *         updated_at:
  *           type: string
  *           format: date-time
- *         note:
- *           type: string
- *           nullable: true
- *           description: Ghi chú giao dịch
- *         withdraw_request_id:
- *           type: string
- *           nullable: true
- *           description: ID rút tiền liên quan (nếu có)
  */
 
 /**
  * @swagger
  * /transactions/from-contract/{contractId}:
  *   post:
- *     summary: Tạo giao dịch từ hợp đồng (admin hoặc hệ thống)
+ *     summary: Tạo giao dịch từ hợp đồng
  *     tags: [Transaction]
  *     security:
  *       - bearerAuth: []
@@ -97,18 +69,24 @@ const {
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của hợp đồng
+ *         description: ID hợp đồng
  *     responses:
  *       201:
  *         description: Giao dịch đã được tạo từ hợp đồng
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Transaction'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Transaction'
+ *       400:
+ *         description: Dữ liệu hợp đồng không hợp lệ
  *       404:
  *         description: Không tìm thấy hợp đồng
  */
-router.post('/from-contract/:contractId', auth, createFromContract);
 
 /**
  * @swagger
@@ -131,13 +109,19 @@ router.post('/from-contract/:contractId', auth, createFromContract);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Transaction'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Transaction'
  *       400:
  *         description: Giao dịch không hợp lệ
+ *       403:
+ *         description: Không có quyền thanh toán
  *       404:
  *         description: Không tìm thấy giao dịch
  */
-router.post('/process/:transactionId', auth, processPayment);
 
 /**
  * @swagger
@@ -170,13 +154,17 @@ router.post('/process/:transactionId', auth, processPayment);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Transaction'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Transaction'
  *       400:
  *         description: Giao dịch không hợp lệ
  *       404:
  *         description: Không tìm thấy giao dịch
  */
-router.post('/refund/:transactionId', auth, permit('admin'), refund);
 
 /**
  * @swagger
@@ -205,6 +193,8 @@ router.post('/refund/:transactionId', auth, permit('admin'), refund);
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 items:
  *                   type: array
  *                   items:
@@ -216,7 +206,6 @@ router.post('/refund/:transactionId', auth, permit('admin'), refund);
  *                 limit:
  *                   type: integer
  */
-router.get('/user', auth, getUserTransactions);
 
 /**
  * @swagger
@@ -258,6 +247,8 @@ router.get('/user', auth, getUserTransactions);
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 items:
  *                   type: array
  *                   items:
@@ -269,39 +260,6 @@ router.get('/user', auth, getUserTransactions);
  *                 limit:
  *                   type: integer
  */
-router.get('/', auth, listTransactions);
-
-/**
- * @swagger
- * /transactions/{id}:
- *   get:
- *     summary: Lấy chi tiết giao dịch theo transaction_id
- *     tags: [Transaction]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: transaction_id của giao dịch
- *     responses:
- *       200:
- *         description: Chi tiết giao dịch
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/Transaction'
- *       404:
- *         description: Không tìm thấy giao dịch
- */
-router.get('/:id', auth, getUserTransactions); // hoặc getTransactionById nếu có
 
 /**
  * @swagger
@@ -346,6 +304,25 @@ router.get('/:id', auth, getUserTransactions); // hoặc getTransactionById nế
  *       404:
  *         description: Không tìm thấy giao dịch
  */
-router.patch('/:transactionId/status', auth, updateTransactionStatus);//admin
+// Tạo transaction từ hợp đồng
+router.post('/from-contract/:contractId', auth, createFromContract);
+
+// Xử lý thanh toán (elderly)
+router.post('/process/:transactionId', auth, processPayment);
+
+// Hoàn tiền (admin)
+router.post('/refund/:transactionId', auth, permit('admin'), refund);
+
+// Lấy danh sách giao dịch của user hiện tại
+router.get('/user', auth, getUserTransactions);
+
+// Lấy danh sách giao dịch (lọc, phân trang)
+router.get('/', auth, listTransactions);
+
+// Lấy chi tiết giao dịch theo id
+router.get('/:id', auth, getTransactionById);
+
+// Cập nhật trạng thái giao dịch (admin)
+router.patch('/:transactionId/status', auth, permit('admin'), updateTransactionStatus);
 
 module.exports = router;

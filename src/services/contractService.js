@@ -4,6 +4,8 @@ const Contract = require('../models/ContractModel');
 const {requestSignOtpService} = require('./matchingService')
 const {User} = require('../models/UserModel');
 const Nurse = require('../models/NurseModel');
+const Elderly = require('../models/ElderiesModel');
+const {createTransactionFromContractService} = require('./transactionService');
 
 
 const listContractsService = async ({ page=1, limit=20, status }) => {
@@ -73,16 +75,37 @@ async function fillContractService(contractId, data, userId) {
   // 5. Lưu
   await contract.save();
 
+    // ***** LOGIC TẠO TRANSACTION NGAY SAU KHI HỢP ĐỒNG ĐƯỢC ĐIỀN ĐẦY ĐỦ *****
+  try {
+      const createdTx = await createTransactionFromContractService(contract._id.toString()); // Gọi dịch vụ tạo transaction
+      console.log(`Transaction ${createdTx.transaction_id} successfully created for contract ${contract._id}`);
+      // Cập nhật hợp đồng với transaction_id vừa tạo
+      contract.payment_details.transaction_id = createdTx.transaction_id;
+      await contract.save(); // Lưu lại hợp đồng với transaction_id
+  } catch (txError) {
+      console.error('Failed to create transaction after filling contract:', txError);
+      // Bạn có thể chọn throw lỗi hoặc ghi log và tiếp tục (tùy thuộc vào nghiệp vụ)
+      // Để đảm bảo transaction được tạo, chúng ta sẽ throw lỗi
+      throw new ApiError(500, 'Failed to create transaction for contract: ' + txError.message);
+  }
+  // **************************************************************************
+
+
   // 6. Gửi OTP cho Elderly
   try {
-    const elderlyUser = await User.findOne({ user_id: contract.elderly_id });
-    if (elderlyUser) {
-      await requestSignOtpService(
-        contract.matching_id,
-        'elderly',
-        elderlyUser.email
-      );
-    }
+      const elderlyProfile = await Elderly.findOne({ elderly_id: contract.elderly_id });
+      if (elderlyProfile) {
+       
+        const elderlyUser = await User.findOne({ user_id: elderlyProfile.user_id });
+      
+        if (elderlyUser) {
+          await requestSignOtpService(
+            contract.matching_id,
+            'elderly',
+            elderlyUser.email
+          );
+        }
+      }
   } catch (e) {
     console.error('Failed to send OTP to Elderly:', e);
   }
@@ -90,10 +113,9 @@ async function fillContractService(contractId, data, userId) {
   // 7. Gửi OTP cho Nurse
   try {
     const nurseProfile = await Nurse.findOne({ nurse_id: contract.nurse_id });
-      console.log(nurseProfile);
+     
     if (nurseProfile) {
       const nurseUser = await User.findOne({ user_id: nurseProfile.user_id });
-        console.log(nurseUser);
       if (nurseUser) {
         await requestSignOtpService(
           contract.matching_id,

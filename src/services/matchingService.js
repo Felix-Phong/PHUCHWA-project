@@ -7,6 +7,9 @@ const Nurse = require('../models/NurseModel');
 const redis = require('../../config/redisClient') 
 const crypto = require('crypto');
 const Elderly = require('../models/ElderiesModel');
+const web3 = require('../../config/web3Client');
+const { abi: contractABI }  = require('../abi/PhucHwaContract.json'); 
+require('dotenv').config();
 
 const OTP_EXPIRE_SEC = 3600; // 1 hour
 
@@ -173,6 +176,18 @@ async function confirmSignContractService(matchingId, role, otp, userId) {
   const match = await Matching.findById(matchingId);
   if (!match) throw new ApiError(404, 'Matching không tìm thấy');
 
+    const elderly = await Elderly.findOne({ elderly_id: match.elderly_id }).select('evm_address');
+    const nurse = await Nurse.findOne({ nurse_id: match.nurse_id }).select('evm_address');
+    if (!elderly || !elderly.evm_address) {
+        throw new ApiError(400, 'Elderly EVM address not found.');
+    }
+    if (!nurse || !nurse.evm_address) {
+        throw new ApiError(400, 'Nurse EVM address not found.');
+    }
+
+      const elderlyEVMAddress = elderly.evm_address;
+  const nurseEVMAddress = nurse.evm_address;
+
   match.contract_status = match.contract_status || {
     elderly_signature: false,
     nurse_signature:   false,
@@ -180,15 +195,66 @@ async function confirmSignContractService(matchingId, role, otp, userId) {
     is_signed:         false
   };
 
-  match.contract_status[`${role}_signature`] = true;
-  // nếu cần bật is_signed ở matching, giữ nguyên logic
+  match.contract_status[`${role}_signature`] = true;  
+
+  // Nếu cả hai bên đã ký, thực hiện giao dịch blockchain
+    if (match.contract_status.elderly_signature && match.contract_status.nurse_signature) {
+        match.contract_status.is_signed = true;
+        match.isMatched = true;
+        match.matchedAt = new Date();
+
+
+        const contractAddress = process.env.CONTRACT_ADDRESS; // Lấy từ .env
+        const myContract = new web3.eth.Contract(contractABI, contractAddress);
+        const senderAddress = process.env.ADMIN_WALLET_ADDRESS; // Địa chỉ ví admin/hệ thống
+        const privateKey = process.env.ADMIN_WALLET_PRIVATE_KEY; // Khóa riêng tư ví admin/hệ thống (CHỈ DÙNG CHO DEMO/TEST)
+
+        try {
+            // Gọi hàm `recordSignedContract` trên smart contract
+            // THAY THẾ 'recordSignedContract' BẰNG TÊN HÀM THẬT CỦA BẠN TRONG SC
+            const contractMethod = myContract.methods.recordSignedContract(
+                matchingId,
+                elderlyEVMAddress,
+                nurseEVMAddress
+            );
+            const encodedABI = contractMethod.encodeABI();
+
+            const gasLimit = await contractMethod.estimateGas({ from: senderAddress });
+            const gasPrice = await web3.eth.getGasPrice();
+
+            const signedTx = await web3.eth.accounts.signTransaction(
+                {
+                   from: senderAddress, 
+                    to: contractAddress,
+                    data: encodedABI,
+                    gas: gasLimit,
+                    gasPrice: gasPrice
+                },
+                privateKey
+            );
+
+            const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+            console.log('Blockchain transaction for contract signing successful:', receipt.transactionHash);
+
+            // Cập nhật contract_hash trong MongoDB bằng hash của giao dịch blockchain
+            match.contract_status.contract_hash = receipt.transactionHash;
+
+        } catch (blockchainError) {
+            console.error('Blockchain interaction failed for contract signing:', blockchainError);
+            // Nếu giao dịch blockchain thất bại, bạn có thể cân nhắc reset is_signed hoặc ghi chú lỗi
+            // Trong trường hợp này, nếu giao dịch blockchain thất bại, chúng ta sẽ throw lỗi
+            throw new ApiError(500, 'Failed to record contract signing on blockchain: ' + blockchainError.message);
+        }
+    }
+    await match.save(); 
+  // // nếu cần bật is_signed ở matching, giữ nguyên logic
   const now = new Date();
-  if (match.contract_status.elderly_signature && match.contract_status.nurse_signature) {
-    match.contract_status.is_signed = true;
-    match.isMatched = true; // nếu cả 2 đã ký, coi như đã matched
-    match.matchedAt = now;
-  }
-  await match.save();
+  // if (match.contract_status.elderly_signature && match.contract_status.nurse_signature) {
+  //   match.contract_status.is_signed = true;
+  //   match.isMatched = true; // nếu cả 2 đã ký, coi như đã matched
+  //   match.matchedAt = now;
+  // }
+  // await match.save();
 
   // 3. Cập nhật Contract: chỉ set chữ ký và log
   
