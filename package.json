@@ -11,7 +11,7 @@
     "start": "node dist/server.js",
     "dev": " npx nodemon",
     "build": "rimraf ./dist",
-    "prepare": "husky"
+   "prepare": "if test -n \"$CI\"; then exit 0; fi; husky" 
   },
   "keywords": [],
   "author": "",
