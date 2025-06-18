@@ -32,13 +32,13 @@ app.use(express.json());
 
 const allowedOrigins = [
   'http://localhost:5173', // Địa chỉ local của React (Vite)
-    'http://localhost:3000',
-  'https://your-frontend-domain.com' // Domain production của frontend
+  'http://localhost:3000',
+  'https://your-frontend-domain.com', // Domain production của frontend
+  'https://phuchwa-project.onrender.com' // <-- THÊM ĐỊA CHỈ RENDER CỦA BẠN VÀO ĐÂY
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Cho phép các request không có origin (vd: mobile app, Postman)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) === -1) {
@@ -47,9 +47,9 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Thêm PATCH nếu dùng
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // Cho phép gửi cookie qua CORS
+  credentials: true
 }));
 
 app.set('trust proxy', 1);
