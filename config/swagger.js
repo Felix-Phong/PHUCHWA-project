@@ -1,6 +1,6 @@
 const swaggerJSdoc = require('swagger-jsdoc');
 
-const PORT = process.env.PORT || 3030; // Default port if not set in environment variables
+const PORT = process.env.PORT || 3000; // Default port if not set in environment variables
 const options = {
   definition: {
     openapi: '3.0.0',
