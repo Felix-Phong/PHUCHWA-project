@@ -11,7 +11,7 @@
     "start": "node dist/server.js",
     "dev": " npx nodemon",
     "build": "rimraf ./dist",
-   "prepare": "if test -n \"$CI\"; then exit 0; fi; husky" 
+    "prepare": "if [ \"$NODE_ENV\" = \"production\" ]; then exit 0; fi; husky" 
   },
   "keywords": [],
   "author": "",
