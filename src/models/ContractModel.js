@@ -18,7 +18,8 @@ const paymentDetailsSchema = new mongoose.Schema({
   nurse_share_percentage:   { type: Number, default: null },
   platform_share_percentage:{ type: Number, default: null },
   nurse_total_earnings:     { type: Number, default: null },
-  platform_total_earnings:  { type: Number, default: null }
+  platform_total_earnings:  { type: Number, default: null },
+  currency:                 { type: String, enum: ['VND','PlatformToken'], default: 'VND' } 
 }, { _id: false });
 
 const contractSchema = new mongoose.Schema({

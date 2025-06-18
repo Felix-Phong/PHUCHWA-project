@@ -81,8 +81,21 @@ const listElderlyService = async ({ page = 1, limit = 20 }) => {
   return { elderlies, total, page, limit };
 };
 
+const updateElderlyProfileService = async (userId, updateData) => {
+  const profile = await Elderly.findOneAndUpdate(
+    { user_id: userId },
+    { $set: updateData },
+    { new: true, runValidators: true }
+  );
+  if (!profile) {
+    throw new ApiError(404, 'Elderly profile not found.');
+  }
+  return profile;
+};
+
 module.exports = {
   createElderlyProfileService,
   getElderlyByUserIdService,
-  listElderlyService
+  listElderlyService,
+  updateElderlyProfileService
 };

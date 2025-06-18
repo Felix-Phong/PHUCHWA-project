@@ -88,7 +88,22 @@ const createNurseProfileService = async (req) => {
   return nurseProfile;
 };
 
+const updateNurseProfileService = async (userId, updateData) => {
+  // updateData có thể chứa evm_address và các trường khác
+  const profile = await Nurse.findOneAndUpdate(
+    { user_id: userId }, // Tìm profile bằng user_id (từ JWT)
+    { $set: updateData }, // Cập nhật các trường trong updateData
+    { new: true, runValidators: true }
+  );
+  if (!profile) {
+    throw new ApiError(404, 'Nurse profile not found.');
+  }
+  return profile;
+};
+
+
 module.exports = {
   getNurseByIdService,
   createNurseProfileService,
+  updateNurseProfileService
 };

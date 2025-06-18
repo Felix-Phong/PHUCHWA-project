@@ -1,5 +1,5 @@
 const express = require('express');
-const { createElderlyProfile,getElderlyByUserId,listElderly} = require('../controllers/elderlyController');
+const { createElderlyProfile,getElderlyByUserId,listElderly,updateElderlyProfile} = require('../controllers/elderlyController');
 const {auth,permit} = require('../middleware/auth');
 const router = express.Router();
 
@@ -141,5 +141,90 @@ router.get('/:user_id', auth, permit('elderly', 'admin'), getElderlyByUserId);
  *         description: Danh sách elderly và phân trang
  */
 router.get('/', auth, listElderly);
+
+/**
+ * @swagger
+ * /elderly/profile:
+ *   patch:
+ *     summary: Cập nhật hồ sơ elderly của người dùng hiện tại
+ *     tags: [Elderly]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *                 example: Nguyễn Văn B
+ *               gender:
+ *                 type: boolean
+ *                 example: false
+ *               date_of_birth:
+ *                 type: string
+ *                 format: date
+ *                 example: 1955-03-20
+ *               permanent_address:
+ *                 type: object
+ *                 properties:
+ *                   street:
+ *                     type: string
+ *                   city:
+ *                     type: string
+ *                   country:
+ *                     type: string
+ *                 example:
+ *                   street: "123 Main St"
+ *                   city: "Hà Nội"
+ *                   country: "Việt Nam"
+ *               current_address:
+ *                 type: object
+ *                 properties:
+ *                   street:
+ *                     type: string
+ *                   city:
+ *                     type: string
+ *                   country:
+ *                     type: string
+ *                 example:
+ *                   street: "456 Second St"
+ *                   city: "Hà Nội"
+ *                   country: "Việt Nam"
+ *               insurance_number:
+ *                 type: string
+ *                 example: BHXH654321
+ *               phone_number:
+ *                 type: string
+ *                 example: 0123456789
+ *               avatar_url:
+ *                 type: string
+ *                 example: https://example.com/new_avatar.jpg
+ *               evm_address:
+ *                 type: string
+ *                 example: 0x5A263691E662D03c9C83E1454eCFf37EEF606194
+ *     responses:
+ *       200:
+ *         description: Hồ sơ elderly đã được cập nhật
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Elderly'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       404:
+ *         description: Hồ sơ elderly không tìm thấy
+ *       403:
+ *         description: Người dùng không có quyền
+ */
+router.patch('/profile', auth, permit('elderly'), updateElderlyProfile);
 
 module.exports = router;

@@ -11,7 +11,7 @@ const transactionSchema = new mongoose.Schema({
   platform_fee:      { type: Number, required: true, min: 0 },
   nurse_receive_amount: { type: Number, required: true, min: 0 },
   status:            { type: String, enum: ['pending','completed','failed','cancelled'], default: 'pending' },
-  payment_method:    { type: String, enum: ['bank_transfer'], required: true },
+  payment_method:    { type: String, enum: ['bank_transfer', 'smart_contract_transfer'], required: true },
   created_at:        { type: Date, default: Date.now },
   updated_at:        { type: Date, default: Date.now },
   contract_id: {

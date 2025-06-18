@@ -1,5 +1,5 @@
 const express = require('express');
-const { getNurseById, createNurseProfile} = require('../controllers/nurseController');
+const { getNurseById, createNurseProfile,updateNurseProfile} = require('../controllers/nurseController');
 const {auth,permit} = require('../middleware/auth');
 const router = express.Router();
 
@@ -155,5 +155,61 @@ router.get('/:id', auth, permit('nurse'), getNurseById);
  *         description: Lỗi máy chủ
  */
 router.post('/profile',  auth, permit('nurse'), createNurseProfile);
+
+/**
+ * @swagger
+ * /nurses/profile:
+ *   patch:
+ *     summary: Cập nhật hồ sơ nurse của người dùng hiện tại
+ *     tags: [Nurses]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *                 example: Nguyễn Thị A
+ *               gender:
+ *                 type: boolean
+ *                 example: true
+ *               date_of_birth:
+ *                 type: string
+ *                 format: date
+ *                 example: 1990-01-01
+ *               phone_number:
+ *                 type: string
+ *                 example: 0987654321
+ *               avatar_url:
+ *                 type: string
+ *                 example: https://example.com/avatar.jpg
+ *               evm_address:
+ *                 type: string
+ *                 example: 0x5A263691E662D03c9C83E1454eCFf37EEF606194
+ *     responses:
+ *       200:
+ *         description: Hồ sơ nurse đã được cập nhật
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Nurse'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       404:
+ *         description: Hồ sơ nurse không tìm thấy
+ *       403:
+ *         description: Người dùng không có quyền
+ */
+router.patch('/profile', auth, permit('nurse'), updateNurseProfile);
 
 module.exports = router;

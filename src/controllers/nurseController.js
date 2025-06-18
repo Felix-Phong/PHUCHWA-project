@@ -1,4 +1,4 @@
-const { getNurseByIdService,createNurseProfileService } = require('../services/nurseService');
+const { getNurseByIdService,createNurseProfileService,updateNurseProfileService } = require('../services/nurseService');
 const ApiError = require('../utils/apiError');
 
 const getNurseById = async (req, res, next) => {
@@ -32,7 +32,18 @@ const createNurseProfile = async (req, res, next) => {
   }
 };
 
+const updateNurseProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.user_id; 
+    const updatedProfile = await updateNurseProfileService(userId, req.body);
+    res.status(200).json({ success: true, data: updatedProfile });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
     getNurseById,
     createNurseProfile,
+    updateNurseProfile
 };

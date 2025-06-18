@@ -1,4 +1,4 @@
-const {createElderlyProfileService,getElderlyByUserIdService,listElderlyService} = require('../services/elderlyService');
+const {createElderlyProfileService,getElderlyByUserIdService,listElderlyService,updateElderlyProfileService} = require('../services/elderlyService');
 const ApiError = require('../utils/apiError');
 
 const createElderlyProfile = async (req, res, next) => {
@@ -35,9 +35,20 @@ const listElderly = async (req, res, next) => {
   }
 };
 
+const updateElderlyProfile = async (req, res, next) => {
+  try {
+   
+    const userId = req.user.user_id; 
+    const updatedProfile = await updateElderlyProfileService(userId, req.body);
+    res.status(200).json({ success: true, data: updatedProfile });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createElderlyProfile,
   getElderlyByUserId,
-  listElderly
+  listElderly,
+  updateElderlyProfile
 };
