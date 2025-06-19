@@ -33,7 +33,7 @@ app.use(express.json());
 const allowedOrigins = [
   'http://localhost:5173', // Địa chỉ local của React (Vite)
   'http://localhost:3000',
-  'https://your-frontend-domain.com', // Domain production của frontend
+  'https://phuchwa.netlify.app', // Domain production của frontend
   'https://phuchwa-project.onrender.com' // <-- THÊM ĐỊA CHỈ RENDER CỦA BẠN VÀO ĐÂY
 ];
 
