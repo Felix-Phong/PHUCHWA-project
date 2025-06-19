@@ -23,7 +23,7 @@ async function calculatePlatformFee(service_type, amount) {
 // Đảm bảo PHT_VND_EXCHANGE_RATE được định nghĩa trong .env và là một số hợp lệ
 const PHT_VND_EXCHANGE_RATE = parseFloat(process.env.PHT_VND_EXCHANGE_RATE || '1');
 if (isNaN(PHT_VND_EXCHANGE_RATE) || PHT_VND_EXCHANGE_RATE <= 0) {
-    console.error("PHT_VND_EXCHANGE_RATE in .env is invalid. Defaulting to 1.");
+    console.error("PHT_VND_EXCHANGE_RATE in .env is invalid. Defaulting to 100000.");
     // Bạn có thể chọn throw error cứng ở đây nếu muốn
     PHT_VND_EXCHANGE_RATE = 100000;
 }
@@ -248,6 +248,11 @@ async function refundTransactionService(transactionId, reason) {
 
     try {
         const refundAmountInPHT = tx.amount / PHT_VND_EXCHANGE_RATE; // Chuyển VND sang PHT cho refund
+        console.log(`[DEBUG_REFUND_PROCESS] --- START REFUND DEBUG ---`);
+        console.log(`[DEBUG_REFUND_PROCESS] Elderly USER ID: ${tx.elderly_id}`);
+        console.log(`[DEBUG_REFUND_PROCESS] Refund Amount (VND): ${tx.amount}`);
+        console.log(`[DEBUG_REFUND_PROCESS] Exchange Rate: ${PHT_VND_EXCHANGE_RATE}`);
+
     const roundedRefundAmountInPHT = Math.round(refundAmountInPHT); // Làm tròn
     if (roundedRefundAmountInPHT <= 0) {
         throw new ApiError(400, 'Calculated PlatformToken refund amount is zero or negative.');
@@ -261,6 +266,7 @@ async function refundTransactionService(transactionId, reason) {
 
       const signedTx = await web3.eth.accounts.signTransaction(
         {
+           from: senderEVMAddress,
           to: tokenAddress,
           data: encodedABI,
           gas: gasLimit,

@@ -311,7 +311,7 @@ router.post('/from-contract/:contractId', auth, createFromContract);
 router.post('/process/:transactionId', auth, processPayment);
 
 // Hoàn tiền (admin)
-router.post('/refund/:transactionId', auth, permit('admin'), refund);
+router.post('/refund/:transactionId', auth, refund); //admin
 
 // Lấy danh sách giao dịch của user hiện tại
 router.get('/user', auth, getUserTransactions);

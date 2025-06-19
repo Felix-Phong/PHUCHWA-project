@@ -5,12 +5,14 @@ const Nurse = require('../models/NurseModel'); // Để kiểm tra nurse_id
 const ApiError = require('../utils/apiError');
 const { v4: uuidv4 } = require('uuid');
 const web3 = require('../../config/web3Client');
+require('dotenv').config(); // Để sử dụng biến môi trường từ .env
 
 // Lấy tỷ giá hối đoái từ .env
 const PHT_VND_EXCHANGE_RATE = parseFloat(process.env.PHT_VND_EXCHANGE_RATE || '1');
 if (isNaN(PHT_VND_EXCHANGE_RATE) || PHT_VND_EXCHANGE_RATE <= 0) {
-    console.error("PHT_VND_EXCHANGE_RATE in .env is invalid for withdrawService. Defaulting to 1.");
-    PHT_VND_EXCHANGE_RATE = 1; // Giá trị mặc định an toàn
+    console.error("PHT_VND_EXCHANGE_RATE in .env is invalid. Defaulting to 100000.");
+    // Bạn có thể chọn throw error cứng ở đây nếu muốn
+    PHT_VND_EXCHANGE_RATE = 100000;
 }
 
 // Hàm để tạo yêu cầu rút tiền mới
@@ -92,9 +94,9 @@ const processWithdrawRequestService = async (withdraw_request_id, newStatus) => 
             throw new ApiError(404, 'Nurse card (wallet) not found for processing.');
         }
 
-        // ********* ĐIỀU CHỈNH LOGIC TRỪ TIỀN VÀ CẬP NHẬT SỐ DƯ *********
-        // `request.amount` là số tiền gốc (VND). Cần chuyển đổi sang PHT để trừ từ Card.balance (PHT).
+
         const amountToDeductInPHT = Math.round(request.amount / PHT_VND_EXCHANGE_RATE);
+       
 
         if (amountToDeductInPHT <= 0) { // Kiểm tra sau khi làm tròn
             throw new ApiError(400, 'Calculated PlatformToken deduction amount is zero or negative. Check withdrawal amount and exchange rate.');
@@ -110,7 +112,7 @@ const processWithdrawRequestService = async (withdraw_request_id, newStatus) => 
         nurseActualCard.balance -= amountToDeductInPHT; // Thực hiện phép trừ Number
         await nurseActualCard.save();
  
-        // ********* KẾT THÚC ĐIỀU CHỈNH *********
+ 
     }
 
     request.status = newStatus;
