@@ -1,10 +1,10 @@
-const { getNurseByIdService,createNurseProfileService,updateNurseProfileService } = require('../services/nurseService');
+const { getNurseByUserIdService,createNurseProfileService,updateNurseProfileService } = require('../services/nurseService');
 const ApiError = require('../utils/apiError');
 
-const getNurseById = async (req, res, next) => {
+const getNurseByUserId = async (req, res, next) => {
 try {
-    const nurseId = req.params.id;
-    const nurse = await getNurseByIdService(nurseId);
+    const userId = req.params.id;
+    const nurse = await getNurseByUserIdService(userId);
 
     if (!nurse) {
         return next(new ApiError(404, 'Nurse not found'));
@@ -43,7 +43,7 @@ const updateNurseProfile = async (req, res, next) => {
 };
 
 module.exports = {
-    getNurseById,
+    getNurseByUserId,
     createNurseProfile,
     updateNurseProfile
 };

@@ -1,21 +1,21 @@
 const express = require('express');
-const { getNurseById, createNurseProfile,updateNurseProfile} = require('../controllers/nurseController');
+const { getNurseByUserId, createNurseProfile,updateNurseProfile} = require('../controllers/nurseController');
 const {auth,permit} = require('../middleware/auth');
 const router = express.Router();
 
 /**
  * @swagger
- * /nurses/{id}:
+ * /nurses/{user_id}:
  *   get:
  *     summary: Lấy thông tin y tá
  *     tags: [Nurses]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của y tá
+ *         description: User_ID của y tá
  *     responses:
  *       200:
  *         description: Thông tin y tá
@@ -52,7 +52,7 @@ const router = express.Router();
  *         description: Lỗi máy chủ
  */
 
-router.get('/:id', auth, permit('nurse'), getNurseById);
+router.get('/:id', auth, permit('nurse'), getNurseByUserId);
 /**
  * @swagger
  * /nurses/profile:

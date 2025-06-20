@@ -3,20 +3,10 @@ const {User} = require('../models/UserModel');
 const ApiError = require('../utils/apiError');
 const {createCardService} = require('../services/cardService');
 
-const getNurseByIdService = async (nurseId) => {
-  try {
-    // Tìm nurse bằng nurse_id và populate thông tin từ User
-    const nurse = await Nurse.findOne({ nurse_id: nurseId });
-
-    if (!nurse) {
-      throw new ApiError(404, 'Nurse not found');
-    }
-
-    return nurse;
-  } catch (error) {
-    console.error('Error in getNurseByIdService:', error); // Log lỗi chi tiết
-    throw new ApiError(500, `Error fetching nurse: ${error.message}`);
-  }
+const getNurseByUserIdService = async (userId) => {
+  const nurse = await Nurse.findOne({ user_id: userId });
+  if (!nurse) throw new ApiError(404, 'Nurse not found');
+  return nurse;
 };
 
 const createNurseProfileService = async (req) => {
@@ -103,7 +93,7 @@ const updateNurseProfileService = async (userId, updateData) => {
 
 
 module.exports = {
-  getNurseByIdService,
+  getNurseByUserIdService,
   createNurseProfileService,
   updateNurseProfileService
 };
