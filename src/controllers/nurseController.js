@@ -1,4 +1,4 @@
-const { getNurseByUserIdService,createNurseProfileService,updateNurseProfileService } = require('../services/nurseService');
+const { getNurseByUserIdService,createNurseProfileService,updateNurseProfileService,getAllNusersIsAvailableForMatchingService } = require('../services/nurseService');
 const ApiError = require('../utils/apiError');
 
 const getNurseByUserId = async (req, res, next) => {
@@ -42,8 +42,25 @@ const updateNurseProfile = async (req, res, next) => {
   }
 };
 
+const getAvailableNurses = async (req, res, next) => {
+ const nurses = await Nurse.find().limit(5);
+console.log('First 5 nurses:', nurses)
+};
+
+const getAllNusersIsAvailableForMatching = async (req, res, next) => {
+  try {
+    const { page, limit } = req.query;
+    const data = await getAllNusersIsAvailableForMatchingService({ page: Number(page), limit: Number(limit) });
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
     getNurseByUserId,
     createNurseProfile,
-    updateNurseProfile
+    updateNurseProfile,
+    getAvailableNurses,
+    getAllNusersIsAvailableForMatching
 };

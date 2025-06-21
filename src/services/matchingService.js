@@ -48,6 +48,8 @@ const createMatchingService = async (user, { nurse_id, service_level, booking_ti
     resetAt:         new Date()
   });
 
+  nurse.isMatched = false; // Cập nhật trạng thái y tá đã matched
+  await nurse.save();
   return newMatch;
 };
 

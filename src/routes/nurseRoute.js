@@ -1,7 +1,9 @@
 const express = require('express');
-const { getNurseByUserId, createNurseProfile,updateNurseProfile} = require('../controllers/nurseController');
+const { getNurseByUserId, createNurseProfile,updateNurseProfile,getAvailableNurses,getAllNusersIsAvailableForMatching} = require('../controllers/nurseController');
 const {auth,permit} = require('../middleware/auth');
 const router = express.Router();
+
+console.log('==> nurseRoute loaded');
 
 /**
  * @swagger
@@ -211,5 +213,48 @@ router.post('/profile',  auth, permit('nurse'), createNurseProfile);
  *         description: Người dùng không có quyền
  */
 router.patch('/profile', auth, permit('nurse'), updateNurseProfile);
+
+
+
+/**
+ * @swagger
+ * /nurses/matching/available:
+ *   get:
+ *     summary: Lấy danh sách tất cả người dùng (admin)
+ *     tags: [Nurses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Danh sách users và phân trang
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 total:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ */
+router.get('/matching/available',auth, getAllNusersIsAvailableForMatching);
+
 
 module.exports = router;

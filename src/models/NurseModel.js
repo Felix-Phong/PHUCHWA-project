@@ -195,9 +195,6 @@ card_id: {
   }
 }, { timestamps: true });
 
-// Indexes
-nurseSchema.index({ user_id: 1 });
-nurseSchema.index({ isAvailableForMatching: 1 });
 
 const Nurse = mongoose.model('Nurse', nurseSchema);
 

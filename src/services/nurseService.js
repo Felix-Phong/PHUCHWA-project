@@ -92,8 +92,18 @@ const updateNurseProfileService = async (userId, updateData) => {
 };
 
 
+
+const getAllNusersIsAvailableForMatchingService = async ({ page = 1, limit = 20 }) => {
+  const skip = (page - 1) * limit;
+  const [users, total] = await Promise.all([
+    Nurse.find({isAvailableForMatching: true}).skip(skip).limit(limit).select('-password'),
+    Nurse.countDocuments({ isAvailableForMatching: true })
+  ]);
+  return { users, total, page, limit };
+};
 module.exports = {
   getNurseByUserIdService,
   createNurseProfileService,
-  updateNurseProfileService
+  updateNurseProfileService,
+   getAllNusersIsAvailableForMatchingService
 };
